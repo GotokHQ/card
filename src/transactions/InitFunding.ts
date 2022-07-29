@@ -3,21 +3,13 @@ import { PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
 
 type Args = {
-  name: string;
-  description: string;
-  uri: string;
-  mutable: boolean;
-  access: BN | null;
-  maxUses: BN | null;
-  maxSupply: BN | null;
-  price: BN;
-  hasReferrer: boolean;
-  hasMarketAuthority: boolean;
-  referralEndDate: BN | null;
+  amount: BN;
+  feeBps: number;
+  key: StringPublicKey;
 };
 
-export class InitPassBookArgs extends Borsh.Data<Args> {
-  static readonly SCHEMA = InitPassBookArgs.struct([
+export class InitFundingArgs extends Borsh.Data<Args> {
+  static readonly SCHEMA = InitFundingArgs.struct([
     ['amount', 'u64'],
     ['feeBps', 'u16'],
     ['key', 'pubkeyAsString'],

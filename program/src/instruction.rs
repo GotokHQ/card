@@ -63,9 +63,9 @@ pub fn funding(
         AccountMeta::new(*collection_token, false),
         AccountMeta::new(*collection_fee_token, false),
         AccountMeta::new_readonly(*mint, false),
-        AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(system_program::id(), false), 
+        AccountMeta::new_readonly(spl_token::id(), false),
     ];
 
     Instruction::new_with_borsh(

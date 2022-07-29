@@ -1,6 +1,6 @@
 import { Borsh, AnyPublicKey, ERROR_INVALID_OWNER, Account } from '@metaplex-foundation/mpl-core';
 import { AccountInfo, PublicKey } from '@solana/web3.js';
-import { CardProgram } from '../CardProgram';
+import { CardProgram } from '../cardProgram';
 
 export const MAX_DATA_LEN = 1;
 
