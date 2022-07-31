@@ -8,10 +8,10 @@ pub mod funding;
 
 pub struct Processor;
 impl Processor {
-    pub fn process<'a>(
+    pub fn process(
         program_id: &Pubkey,
         accounts: &[AccountInfo],
-        instruction_data: &'a [u8],
+        instruction_data: &[u8],
     ) -> ProgramResult {
         let instruction = FundingInstruction::try_from_slice(instruction_data)?;
 

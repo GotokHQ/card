@@ -25,7 +25,7 @@ pub fn find_program_authority(program_id: &Pubkey) -> (Pubkey, u8) {
 /// Generates funding program address
 pub fn find_funding_program_address(program_id: &Pubkey, key: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[PREFIX.as_bytes(), program_id.as_ref(), &key.to_bytes()],
+        &[PREFIX.as_bytes(), program_id.as_ref(), key.as_ref()],
         program_id,
     )
 }

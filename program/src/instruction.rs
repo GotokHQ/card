@@ -19,10 +19,12 @@ pub struct FundingArgs {
     pub fee_bps: u16,
     /// The unique transaction key
     pub key: Pubkey,
+    /// bump seed associated with key
+    pub bump: u8,
 }
 
 #[repr(C)]
-#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, Clone)]
 pub enum FundingInstruction {
     /// Starts the trade by creating and populating an escrow account and transferring ownership of the given temp token account to the PDA
     ///
