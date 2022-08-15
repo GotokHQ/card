@@ -127,10 +127,10 @@ pub fn transfer<'a>(
 }
 
 pub fn calculate_fee(
-    total_amount: u64,
+    amount: u64,
     fee_basis_points: u64,
 ) -> Result<u64, ProgramError> {
-    Ok(total_amount
+    Ok(amount
         .checked_mul(fee_basis_points)
         .ok_or::<ProgramError>(CardError::MathOverflow.into())?
         .checked_div(10000)
@@ -138,12 +138,12 @@ pub fn calculate_fee(
 }
 
 pub fn calculate_amount_with_fee(
-    total_amount: u64,
+    amount: u64,
     fee_basis_points: u64,
 ) -> Result<u64, ProgramError> {
-    Ok(total_amount
+    Ok(amount
         .checked_add(
-            total_amount
+            amount
                 .checked_mul(fee_basis_points)
                 .ok_or::<ProgramError>(CardError::MathOverflow.into())?
                 .checked_div(10000)
