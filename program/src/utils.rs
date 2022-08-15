@@ -137,12 +137,12 @@ pub fn calculate_fee(
         .ok_or::<ProgramError>(CardError::MathOverflow.into())?)
 }
 
-pub fn calculate_amount_less_fee(
+pub fn calculate_amount_with_fee(
     total_amount: u64,
     fee_basis_points: u64,
 ) -> Result<u64, ProgramError> {
     Ok(total_amount
-        .checked_sub(
+        .checked_add(
             total_amount
                 .checked_mul(fee_basis_points)
                 .ok_or::<ProgramError>(CardError::MathOverflow.into())?

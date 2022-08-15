@@ -64,7 +64,7 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: FundingArgs) ->
     }
 
     let fee = calculate_fee(args.amount, args.fee_bps as u64)?;
-    let amount = calculate_amount_less_fee(args.amount, args.fee_bps as u64)?;
+    let amount = calculate_amount_with_fee(args.amount, args.fee_bps as u64)?;
 
     transfer(source_token_info, collection_token_info, user_info, amount)?;
     transfer(source_token_info, collection_fee_token_info, user_info, fee)?;
