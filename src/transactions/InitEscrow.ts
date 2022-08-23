@@ -9,8 +9,8 @@ type Args = {
   bump: number;
 };
 
-export class InitFundingArgs extends Borsh.Data<Args> {
-  static readonly SCHEMA = InitFundingArgs.struct([
+export class InitEscrowArgs extends Borsh.Data<Args> {
+  static readonly SCHEMA = InitEscrowArgs.struct([
     ['instruction', 'u8'],
     ['amount', 'u64'],
     ['feeBps', 'u16'],
@@ -18,24 +18,26 @@ export class InitFundingArgs extends Borsh.Data<Args> {
     ['bump', 'u8'],
   ]);
 
-  instruction = 0;
+  instruction = 2;
   amount: BN;
   feeBps: number;
   key: StringPublicKey;
   bump: number;
 }
 
-export type InitFundingParams = {
+export type InitEscrowParams = {
   amount: BN;
   feeBps: number;
   key: PublicKey;
   bump: number;
-  user: PublicKey;
+  wallet: PublicKey;
   authority: PublicKey;
   payer: PublicKey;
-  funding: PublicKey;
+  escrow: PublicKey;
+  vaultOwner: PublicKey;
+  vaultToken: PublicKey;
   sourceToken: PublicKey;
-  collectionToken: PublicKey;
+  destinationToken: PublicKey;
   collectionFeeToken: PublicKey;
   mint: PublicKey;
 };

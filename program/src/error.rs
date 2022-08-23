@@ -31,8 +31,26 @@ pub enum CardError {
     AccountNotInitialized,
     #[error("Math overflow")]
     MathOverflow,
-    #[error("Invalid funding key")]
-    InvalidFundingKey
+    #[error("Invalid deposit key")]
+    InvalidDepositKey,
+    #[error("Invalid withdraw key")]
+    InvalidWithdrawKey,
+    #[error("Invalid escrow key")]
+    InvalidEscrowKey,
+    #[error("Invalid vault owner")]
+    InvalidVaultOwner,
+    #[error("Invalid vault token owner")]
+    InvalidVaultTokenOwner,
+    #[error("Invalid source token owner")]
+    InvalidSrcTokenOwner,
+    #[error("Invalid destination token owner")]
+    InvalidDstTokenOwner,
+    #[error("Invalid fee token owner")]
+    InvalidFeeTokenOwner,
+    #[error("Invalid deposit token owner")]
+    InvalidDepositTokenOwner,
+    #[error("Invalid withdraw token owner")]
+    InvalidWithdrawTokenOwner,
 }
 
 impl From<CardError> for ProgramError {

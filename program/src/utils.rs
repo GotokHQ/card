@@ -6,12 +6,14 @@ use crate::error::CardError;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    program::{invoke_signed, invoke},
+    msg,
+    program::{invoke, invoke_signed},
     program_error::ProgramError,
+    program_memory::sol_memcmp,
     program_pack::{IsInitialized, Pack},
-    pubkey::Pubkey,
+    pubkey::{Pubkey, PUBKEY_BYTES},
     system_instruction,
-    sysvar::{rent::Rent, Sysvar}, msg,
+    sysvar::{rent::Rent, Sysvar},
 };
 use spl_token::state::Account;
 
@@ -101,35 +103,66 @@ pub fn empty_account_balance(
 }
 
 pub fn transfer<'a>(
+    is_native: bool,
     source_account_info: &AccountInfo<'a>,
     destination_account_info: &AccountInfo<'a>,
     owner_account_info: &AccountInfo<'a>,
     amount: u64,
+    signers_seeds: &[&[&[u8]]],
+) -> Result<(), ProgramError> {
+    if is_native {
+        native_transfer(source_account_info, destination_account_info, amount, signers_seeds)
+    } else {
+        spl_token_transfer(
+            source_account_info,
+            destination_account_info,
+            owner_account_info,
+            amount,
+            signers_seeds,
+        )
+    }
+}
+
+/// SPL transfer instruction.
+pub fn spl_token_transfer<'a>(
+    source: &AccountInfo<'a>,
+    destination: &AccountInfo<'a>,
+    authority: &AccountInfo<'a>,
+    amount: u64,
+    signers_seeds: &[&[&[u8]]],
 ) -> Result<(), ProgramError> {
     let ix = spl_token::instruction::transfer(
         &spl_token::id(),
-        source_account_info.key,
-        destination_account_info.key,
-        owner_account_info.key,
+        source.key,
+        destination.key,
+        authority.key,
         &[],
         amount,
     )?;
 
     invoke_signed(
         &ix,
-        &[
-            source_account_info.clone(),
-            destination_account_info.clone(),
-            owner_account_info.clone(),
-        ],
-        &[],
+        &[source.clone(), destination.clone(), authority.clone()],
+        signers_seeds,
     )
 }
 
-pub fn calculate_fee(
+/// Native instruction.
+pub fn native_transfer<'a>(
+    source: &AccountInfo<'a>,
+    destination: &AccountInfo<'a>,
     amount: u64,
-    fee_basis_points: u64,
-) -> Result<u64, ProgramError> {
+    signers_seeds: &[&[&[u8]]],
+) -> Result<(), ProgramError> {
+    invoke_signed(
+        // for native SOL transfer user_wallet key == user_token_account key
+        &system_instruction::transfer(&source.key, &destination.key, amount),
+        &[source.clone(), destination.clone()],
+        signers_seeds,
+    )
+}
+
+pub fn calculate_fee(amount: u64, fee_basis_points: u64) -> Result<u64, ProgramError> {
     Ok(amount
         .checked_mul(fee_basis_points)
         .ok_or::<ProgramError>(CardError::MathOverflow.into())?
@@ -137,18 +170,9 @@ pub fn calculate_fee(
         .ok_or::<ProgramError>(CardError::MathOverflow.into())?)
 }
 
-pub fn calculate_amount_with_fee(
-    amount: u64,
-    fee_basis_points: u64,
-) -> Result<u64, ProgramError> {
+pub fn calculate_amount_with_fee(amount: u64, fee_basis_points: u64) -> Result<u64, ProgramError> {
     Ok(amount
-        .checked_add(
-            amount
-                .checked_mul(fee_basis_points)
-                .ok_or::<ProgramError>(CardError::MathOverflow.into())?
-                .checked_div(10000)
-                .ok_or::<ProgramError>(CardError::MathOverflow.into())?,
-        )
+        .checked_add(calculate_fee(amount, fee_basis_points)?)
         .ok_or::<ProgramError>(CardError::MathOverflow.into())?)
 }
 
@@ -162,10 +186,8 @@ pub fn create_new_account_raw<'a>(
     signer_seeds: &[&[u8]],
 ) -> ProgramResult {
     let rent = &Rent::from_account_info(rent_sysvar_info)?;
-    let required_lamports = rent
-        .minimum_balance(size);
+    let required_lamports = rent.minimum_balance(size);
 
-  
     if required_lamports > 0 {
         msg!("Transfer {} lamports to the new account", required_lamports);
         invoke(
@@ -194,4 +216,10 @@ pub fn create_new_account_raw<'a>(
         &[&signer_seeds],
     )?;
     Ok(())
+}
+
+/// Checks two pubkeys for equality in a computationally cheap way using
+/// `sol_memcmp`
+pub fn cmp_pubkeys(a: &Pubkey, b: &Pubkey) -> bool {
+    sol_memcmp(a.as_ref(), b.as_ref(), PUBKEY_BYTES) == 0
 }
