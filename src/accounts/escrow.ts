@@ -64,11 +64,7 @@ export class Escrow extends Account<EscrowData> {
   }
 
   static async getPDA(key: AnyPublicKey) {
-    return CardProgram.findProgramAddress([
-      Buffer.from(CardProgram.PREFIX),
-      CardProgram.PUBKEY.toBuffer(),
-      new PublicKey(key).toBuffer(),
-      Buffer.from(Escrow.PREFIX),
-    ]);
+    const [pubKey] = await CardProgram.findEscrowAccount(new PublicKey(key));
+    return pubKey;
   }
 }

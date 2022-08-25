@@ -47,7 +47,7 @@ pub fn process_init_escrow(
     let escrow_info = next_account_info(account_info_iter)?;
     let vault_owner_info = next_account_info(account_info_iter)?;
 
-    let (vault_owner_key, bump) = find_program_authority(program_id);
+    let (vault_owner_key, _) = find_program_authority(program_id);
     assert_account_key(
         vault_owner_info,
         &vault_owner_key,
@@ -101,6 +101,7 @@ pub fn process_init_escrow(
     }
 
     let total = calculate_amount_with_fee(args.amount, args.fee_bps as u64)?;
+    
     transfer(
         is_native,
         src_token_info,
@@ -121,6 +122,7 @@ pub fn process_init_escrow(
             PREFIX.as_bytes(),
             program_id.as_ref(),
             args.key.as_ref(),
+            Escrow::PREFIX.as_bytes(),
             &[args.bump],
         ],
     )?;
@@ -146,7 +148,7 @@ pub fn process_init_escrow(
 
 //inside: impl Processor {}
 pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramResult {
-    msg!("Process settlement with fee");
+    msg!("Process settlement");
     let account_info_iter = &mut accounts.iter();
     let authority_info = next_account_info(account_info_iter)?;
 

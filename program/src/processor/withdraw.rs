@@ -3,7 +3,7 @@
 use crate::{
     collections::{authority, fee},
     error::CardError,
-    instruction::{DepositArgs, WithdrawArgs},
+    instruction::{WithdrawArgs},
     state::{FLAG_ACCOUNT_SIZE, withdraw::{Withdraw}},
     utils::*,
     PREFIX,

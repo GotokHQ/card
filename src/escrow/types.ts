@@ -1,7 +1,6 @@
 export interface InitializePaymentOutput {
   message: string;
   signatures: Sig[];
-  escrowAddress: string;
 }
 
 export interface Sig {
@@ -11,17 +10,14 @@ export interface Sig {
 
 export interface InitializePaymentInput {
   wallet: string;
-  destination: string;
-  fee: string;
   mint: string;
   key: string;
-  amount: string;
+  amount: number;
   feeBps?: number;
   memo?: string;
+  serializeInWireFormat?: boolean;
 }
-export interface SettlePaymentInput {
-  walletAddress: string;
-  amount: string;
+export interface EscrowInput {
   escrowAddress: string;
   memo?: string;
 }
@@ -36,21 +32,6 @@ export interface SettleAndTransferInput {
   fee?: string;
 }
 
-export interface CancelPaymentInput {
-  escrowAddress: string;
-  memo?: string;
-}
-
 export interface CancelPaymentOutput {
   signature: string;
-}
-
-export interface ClosePaymentInput {
-  escrowAddress: string;
-  memo?: string;
-}
-
-export interface SettlePaymentOutput {
-  signature: string;
-  destinationWalletAddress: string;
 }
