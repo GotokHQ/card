@@ -242,16 +242,15 @@ export class EscrowClient {
       signature: sig.signature?.toString('base64'),
       pubKey: sig.publicKey.toBase58(),
     }));
-    const serializeInWireFormat = input.serializeInWireFormat ?? false;
+    //const serializeInWireFormat = input.serializeInWireFormat ?? false;
     return {
       signatures,
-      message: serializeInWireFormat
-        ? transaction
-            .serialize({
-              requireAllSignatures: false,
-            })
-            .toString('base64')
-        : transaction.serializeMessage().toString('base64'),
+      message: transaction
+        .serialize({
+          requireAllSignatures: false,
+          verifySignatures: false,
+        })
+        .toString('base64'),
     };
   };
 
