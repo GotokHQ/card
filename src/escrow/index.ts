@@ -194,6 +194,7 @@ export class EscrowClient {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const key = new PublicKey(input.key);
+    const serializeInWireFormat = input.serializeInWireFormat ?? false;
     const [vaultOwner] = await CardProgram.findProgramAuthority();
     const [escrow, bump] = await CardProgram.findEscrowAccount(key);
     const vaultTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
@@ -233,23 +234,22 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    transaction.recentBlockhash = (
-      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
-    ).blockhash;
+    const { blockhash } = await this.connection.getLatestBlockhash('finalized');
+    console.log('latestblockhash', blockhash);
+    console.log('serializeInWireFormat', serializeInWireFormat);
+    transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
     const signatures = transaction.signatures.map((sig) => ({
       signature: sig.signature?.toString('base64'),
       pubKey: sig.publicKey.toBase58(),
     }));
-    const serializeInWireFormat = input.serializeInWireFormat ?? false;
     return {
       signatures,
       message: serializeInWireFormat
         ? transaction
             .serialize({
               requireAllSignatures: false,
-              verifySignatures: false,
             })
             .toString('base64')
         : transaction.serializeMessage().toString('base64'),
@@ -336,11 +336,6 @@ export class EscrowClient {
       },
       {
         pubkey: spl.TOKEN_PROGRAM_ID,
-        isSigner: false,
-        isWritable: false,
-      },
-      {
-        pubkey: SystemProgram.programId,
         isSigner: false,
         isWritable: false,
       },
