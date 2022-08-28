@@ -1,3 +1,5 @@
+import { Commitment } from '@solana/web3.js';
+
 export interface InitializePaymentOutput {
   message: string;
   signatures: Sig[];
@@ -16,6 +18,7 @@ export interface InitializePaymentInput {
   feeBps?: number;
   memo?: string;
   serializeInWireFormat?: boolean;
+  commitment?: Commitment;
 }
 export interface EscrowInput {
   escrowAddress: string;

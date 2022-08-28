@@ -227,17 +227,18 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    transaction.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    transaction.recentBlockhash = (
+      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
+    ).blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
     const signatures = transaction.signatures.map((sig) => ({
-      signature: sig.signature && sig.signature.toString('base64'),
+      signature: sig.signature?.toString('base64'),
       pubKey: sig.publicKey.toBase58(),
     }));
     const serializeInWireFormat = input.serializeInWireFormat ?? false;
-    console.log('serializeInWireFormat', serializeInWireFormat);
     return {
-      signatures: signatures,
+      signatures,
       message: serializeInWireFormat
         ? transaction
             .serialize({
