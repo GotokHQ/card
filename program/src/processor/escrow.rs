@@ -63,7 +63,7 @@ pub fn process_init_escrow(
     let reference_info = next_account_info(account_info_iter)?;
     let rent_info = next_account_info(account_info_iter)?;
     let system_account_info = next_account_info(account_info_iter)?;
-
+    msg!("Read system_account_info");
     let is_native = cmp_pubkeys(mint_info.key, &spl_token::native_mint::id());
 
     if is_native {

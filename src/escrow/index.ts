@@ -343,12 +343,12 @@ export class EscrowClient {
         isWritable: false,
       },
       {
-        pubkey: spl.TOKEN_PROGRAM_ID,
+        pubkey: SystemProgram.programId,
         isSigner: false,
         isWritable: false,
       },
       {
-        pubkey: SystemProgram.programId,
+        pubkey: spl.TOKEN_PROGRAM_ID,
         isSigner: false,
         isWritable: false,
       },

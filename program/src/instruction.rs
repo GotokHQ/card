@@ -38,18 +38,14 @@ pub struct WithdrawArgs {
     pub bump: u8,
 }
 
-/// Initialize a funding arguments
+/// Initialize a escrow arguments
 #[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
-/// Initialize a funding params
+/// Initialize a escrow params
 pub struct InitEscrowArgs {
-    /// The total amount of token X to be refunded back to the payer
     pub amount: u64,
-    /// The fee to collect in basis point
     pub fee_bps: u16,
-    /// The fixed fee to collect
     pub fee_fixed: u64,
-    /// bump seed associated with key
     pub bump: u8,
 }
 
@@ -98,8 +94,10 @@ pub enum CardInstruction {
     /// 7. `[]` The dst token account that will receive the amount if the transaction is successful
     /// 8. `[]` The fee token account that will receive the fee if the transaction is successful
     /// 9. `[]` The token mint
-    /// 10. `[]` The rent sysvar
-    /// 11. `[]` The token program
+    /// 10. `[]` The reference
+    /// 11. `[]` The rent sysvar
+    /// 12. `[]` The system program
+    /// 13. `[]` The token program
     InitEscrow (InitEscrowArgs),
     /// Settle the payment
     ///
@@ -218,6 +216,7 @@ pub fn init_escrow(
     destination_token: &Pubkey,
     collection_fee_token: &Pubkey,
     mint: &Pubkey,
+    reference: &Pubkey,
     args: InitEscrowArgs,
 ) -> Instruction {
     let accounts = vec![
@@ -231,6 +230,7 @@ pub fn init_escrow(
         AccountMeta::new(*destination_token, false),
         AccountMeta::new(*collection_fee_token, false),
         AccountMeta::new_readonly(*mint, false),
+        AccountMeta::new_readonly(*reference, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),

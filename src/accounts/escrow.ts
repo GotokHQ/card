@@ -22,6 +22,7 @@ export type EscrowDataArgs = {
   vaultToken: StringPublicKey;
   feeToken: StringPublicKey;
   mint: StringPublicKey;
+  reference: StringPublicKey;
 };
 
 export class EscrowData extends Borsh.Data<EscrowDataArgs> {
