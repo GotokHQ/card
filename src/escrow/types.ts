@@ -23,6 +23,7 @@ export interface InitializePaymentInput {
 export interface EscrowInput {
   escrowAddress: string;
   memo?: string;
+  commitment?: Commitment;
 }
 
 export interface SettleAndTransferInput {

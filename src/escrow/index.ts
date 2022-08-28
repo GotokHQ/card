@@ -72,7 +72,9 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    transaction.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    transaction.recentBlockhash = (
+      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
+    ).blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.sign(this.feePayer, this.authority);
     try {
@@ -110,7 +112,9 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    transaction.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    transaction.recentBlockhash = (
+      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
+    ).blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.sign(this.feePayer, this.authority);
     try {
@@ -160,7 +164,9 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    transaction.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    transaction.recentBlockhash = (
+      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
+    ).blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.sign(this.feePayer, this.authority);
     return await this.connection.sendRawTransaction(transaction.serialize(), {
@@ -374,7 +380,9 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    transaction.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    transaction.recentBlockhash = (
+      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
+    ).blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.sign(this.feePayer, this.authority);
     const signature = await this.connection.sendRawTransaction(transaction.serialize(), {
@@ -383,8 +391,8 @@ export class EscrowClient {
     return signature;
   };
 
-  settleAndClose = async (settlementInput: EscrowInput): Promise<string> => {
-    const escrowAddress = new PublicKey(settlementInput.escrowAddress);
+  settleAndClose = async (input: EscrowInput): Promise<string> => {
+    const escrowAddress = new PublicKey(input.escrowAddress);
     const [vaultOwner] = await CardProgram.findProgramAuthority();
     const escrow = await _getEscrowAccount(this.connection, escrowAddress);
     const settleInstruction = await this.settleInstruction({
@@ -405,10 +413,12 @@ export class EscrowClient {
     const transaction = new Transaction();
     transaction.add(settleInstruction);
     transaction.add(closeInstruction);
-    if (settlementInput.memo) {
-      transaction.add(this.memoInstruction(settlementInput.memo, this.authority.publicKey));
+    if (input.memo) {
+      transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    transaction.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    transaction.recentBlockhash = (
+      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
+    ).blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.sign(this.feePayer, this.authority);
     try {
