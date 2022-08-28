@@ -14,7 +14,7 @@ export interface InitializePaymentInput {
   wallet: string;
   mint: string;
   reference: string;
-  amount: number;
+  amount: string;
   feeBps?: number;
   fixedFee?: string;
   memo?: string;
