@@ -1,11 +1,11 @@
-import { Borsh, StringPublicKey } from '@metaplex-foundation/mpl-core';
+import { Borsh } from '@metaplex-foundation/mpl-core';
 import { PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
 
 type Args = {
   amount: BN;
   feeBps: number;
-  key: StringPublicKey;
+  fixedFee: BN;
   bump: number;
 };
 
@@ -14,20 +14,21 @@ export class InitEscrowArgs extends Borsh.Data<Args> {
     ['instruction', 'u8'],
     ['amount', 'u64'],
     ['feeBps', 'u16'],
-    ['key', 'pubkeyAsString'],
+    ['fixedFee', 'u64'],
     ['bump', 'u8'],
   ]);
 
   instruction = 2;
   amount: BN;
   feeBps: number;
-  key: StringPublicKey;
+  fixedFee: BN;
   bump: number;
 }
 
 export type InitEscrowParams = {
   amount: BN;
   feeBps: number;
+  fixedFee: BN;
   key: PublicKey;
   bump: number;
   wallet: PublicKey;

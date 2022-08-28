@@ -6,7 +6,7 @@ use solana_program::{
     program_pack::{IsInitialized, Pack, Sealed}, pubkey::Pubkey,
 };
 
-pub const ESCROW_DATA_SIZE: usize = 173;
+pub const ESCROW_DATA_SIZE: usize = 213;
 
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq, BorshSerialize, BorshDeserialize, Default)]
@@ -16,11 +16,13 @@ pub struct Escrow {
     pub is_canceled: bool,
     pub amount: u64,
     pub fee_bps: u16,
+    pub fixed_fee: u64,
     pub src_token: Pubkey,
     pub dst_token: Pubkey,
     pub vault_token: Pubkey,
     pub fee_token: Pubkey,
     pub mint: Pubkey,
+    pub reference: Pubkey,
 }
 
 impl Escrow {

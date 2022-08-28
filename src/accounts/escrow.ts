@@ -9,7 +9,7 @@ import { AccountInfo, PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
 import { CardProgram } from '../cardProgram';
 
-export const MAX_ESCROW_DATA_LEN = 141;
+export const MAX_ESCROW_DATA_LEN = 213;
 
 export type EscrowDataArgs = {
   isInitialized: boolean;
@@ -31,22 +31,26 @@ export class EscrowData extends Borsh.Data<EscrowDataArgs> {
     ['isCanceled', 'u8'],
     ['amount', 'u64'],
     ['feeBps', 'u16'],
+    ['fixedFee', 'u64'],
     ['srcToken', 'pubkeyAsString'],
     ['dstToken', 'pubkeyAsString'],
     ['vaultToken', 'pubkeyAsString'],
     ['feeToken', 'pubkeyAsString'],
     ['mint', 'pubkeyAsString'],
+    ['reference', 'pubkeyAsString'],
   ]);
   isInitialized: boolean;
   isSettled: boolean;
   isCanceled: boolean;
   amount: BN;
   feeBps: number;
+  fixedFee: BN;
   srcToken: StringPublicKey;
   dstToken: StringPublicKey;
   vaultToken: StringPublicKey;
   feeToken: StringPublicKey;
   mint: StringPublicKey;
+  reference: StringPublicKey;
 
   constructor(args: EscrowDataArgs) {
     super(args);

@@ -16,6 +16,7 @@ export interface InitializePaymentInput {
   key: string;
   amount: number;
   feeBps?: number;
+  fixedFee?: string;
   memo?: string;
   serializeInWireFormat?: boolean;
   commitment?: Commitment;

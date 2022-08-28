@@ -4,13 +4,14 @@ use crate::{
         self, AccountAlreadyCanceled, AccountAlreadySettled, AccountNotSettledOrCanceled,
     },
     find_program_authority,
+    instruction::InitEscrowArgs,
     state::escrow::Escrow,
     utils::{
         assert_account_key, assert_initialized, assert_owned_by, assert_signer,
-        assert_token_owned_by, calculate_amount_with_fee, calculate_fee, cmp_pubkeys,
+        assert_token_owned_by, calculate_fee, cmp_pubkeys,
         create_new_account_raw, empty_account_balance, transfer,
     },
-    PREFIX, instruction::InitEscrowArgs,
+    PREFIX,
 };
 
 use solana_program::{
@@ -59,6 +60,7 @@ pub fn process_init_escrow(
     let dst_token_info = next_account_info(account_info_iter)?;
     let fee_token_info = next_account_info(account_info_iter)?;
     let mint_info = next_account_info(account_info_iter)?;
+    let reference_info = next_account_info(account_info_iter)?;
     let rent_info = next_account_info(account_info_iter)?;
     let system_account_info = next_account_info(account_info_iter)?;
 
@@ -100,8 +102,15 @@ pub fn process_init_escrow(
         assert_token_owned_by(&fee_token, &fee::id())?;
     }
 
-    let total = calculate_amount_with_fee(args.amount, args.fee_bps as u64)?;
-    
+    let fee_from_bps = calculate_fee(args.amount, args.fee_bps as u64)?;
+    let total_fee = fee_from_bps
+        .checked_add(args.fee_fixed)
+        .ok_or::<ProgramError>(CardError::MathOverflow.into())?;
+    let total = args
+        .amount
+        .checked_add(total_fee)
+        .ok_or::<ProgramError>(CardError::MathOverflow.into())?;
+
     transfer(
         is_native,
         src_token_info,
@@ -121,7 +130,7 @@ pub fn process_init_escrow(
         &[
             PREFIX.as_bytes(),
             program_id.as_ref(),
-            args.key.as_ref(),
+            reference_info.key.as_ref(),
             Escrow::PREFIX.as_bytes(),
             &[args.bump],
         ],
@@ -135,12 +144,14 @@ pub fn process_init_escrow(
     escrow.is_settled = false;
     escrow.is_canceled = false;
     escrow.fee_bps = args.fee_bps;
+    escrow.fixed_fee = args.fee_fixed;
     escrow.src_token = *src_token_info.key;
     escrow.dst_token = *dst_token_info.key;
     escrow.vault_token = *vault_token_info.key;
     escrow.fee_token = *fee_token_info.key;
     escrow.amount = args.amount;
     escrow.mint = *mint_info.key;
+    escrow.reference = *reference_info.key;
 
     Escrow::pack(escrow, &mut escrow_info.data.borrow_mut())?;
     Ok(())
@@ -191,6 +202,7 @@ pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> Prog
         Some(CardError::InvalidVaultTokenOwner),
     )?;
     let mint_info = next_account_info(account_info_iter)?;
+    assert_account_key(mint_info, &escrow.mint, Some(CardError::InvalidMint))?;
     let vault_owner_info = next_account_info(account_info_iter)?;
 
     let (vault_owner_key, bump) = find_program_authority(program_id);
@@ -206,7 +218,10 @@ pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> Prog
     let vault_signer_seeds = [PREFIX.as_bytes(), program_id.as_ref(), &[bump]];
 
     let is_native = cmp_pubkeys(mint_info.key, &spl_token::native_mint::id());
-    let fee = calculate_fee(escrow.amount, escrow.fee_bps as u64)?;
+    let fee_from_bps = calculate_fee(escrow.amount, escrow.fee_bps as u64)?;
+    let total_fee = fee_from_bps
+        .checked_add(escrow.fixed_fee)
+        .ok_or::<ProgramError>(CardError::MathOverflow.into())?;
 
     transfer(
         is_native,
@@ -221,7 +236,7 @@ pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> Prog
         vault_token_info,
         fee_token_info,
         vault_owner_info,
-        fee,
+        total_fee,
         &[&vault_signer_seeds],
     )?;
     msg!("Mark the escrow account as settled...");
@@ -267,6 +282,8 @@ pub fn process_cancel(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramR
     )?;
 
     let mint_info = next_account_info(account_info_iter)?;
+
+    assert_account_key(mint_info, &escrow.mint, Some(CardError::InvalidMint))?;
     let vault_owner_info = next_account_info(account_info_iter)?;
 
     let (vault_owner_key, bump_seed) = find_program_authority(program_id);
@@ -278,8 +295,15 @@ pub fn process_cancel(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramR
     )?;
     let token_program_info = next_account_info(account_info_iter)?;
     assert_account_key(token_program_info, &spl_token::id(), None)?;
+    let fee_from_bps = calculate_fee(escrow.amount, escrow.fee_bps as u64)?;
+    let total_fee = fee_from_bps
+        .checked_add(escrow.fixed_fee)
+        .ok_or::<ProgramError>(CardError::MathOverflow.into())?;
 
-    let total = calculate_amount_with_fee(escrow.amount, escrow.fee_bps as u64)?;
+    let total = escrow
+        .amount
+        .checked_add(total_fee)
+        .ok_or::<ProgramError>(CardError::MathOverflow.into())?;
     let vault_signer_seeds = [PREFIX.as_bytes(), program_id.as_ref(), &[bump_seed]];
     let is_native = cmp_pubkeys(mint_info.key, &spl_token::native_mint::id());
 

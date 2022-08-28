@@ -45,10 +45,10 @@ pub struct WithdrawArgs {
 pub struct InitEscrowArgs {
     /// The total amount of token X to be refunded back to the payer
     pub amount: u64,
-    /// The fee to collect
+    /// The fee to collect in basis point
     pub fee_bps: u16,
-    /// The unique key
-    pub key: Pubkey,
+    /// The fixed fee to collect
+    pub fee_fixed: u64,
     /// bump seed associated with key
     pub bump: u8,
 }
@@ -150,6 +150,7 @@ pub fn deposit(
     collection_token: &Pubkey,
     collection_fee_token: &Pubkey,
     mint: &Pubkey,
+    reference: &Pubkey,
     args: DepositArgs,
 ) -> Instruction {
     let accounts = vec![
@@ -161,6 +162,7 @@ pub fn deposit(
         AccountMeta::new(*collection_token, false),
         AccountMeta::new(*collection_fee_token, false),
         AccountMeta::new_readonly(*mint, false),
+        AccountMeta::new_readonly(*reference, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),

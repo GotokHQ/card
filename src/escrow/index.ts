@@ -207,6 +207,7 @@ export class EscrowClient {
 
     const amount = new BN(input.amount);
     const feeBps = input.feeBps ?? 0;
+    const fixedFee = new BN(input.fixedFee ?? 0);
     const [sourceToken, destinationToken, collectionFeeToken] = await Promise.all([
       _findAssociatedTokenAddress(walletAddress, mint),
       _findAssociatedTokenAddress(this.fundingWallet, mint),
@@ -223,6 +224,7 @@ export class EscrowClient {
       collectionFeeToken,
       amount: amount,
       feeBps,
+      fixedFee,
       key: key,
       wallet: walletAddress,
       authority: this.authority.publicKey,
@@ -260,6 +262,7 @@ export class EscrowClient {
     const {
       amount,
       feeBps,
+      fixedFee,
       key,
       bump,
       wallet,
@@ -275,8 +278,8 @@ export class EscrowClient {
     const data = InitEscrowArgs.serialize({
       amount,
       feeBps,
+      fixedFee,
       bump,
-      key: key.toBase58(),
     });
     const keys = [
       {
@@ -330,12 +333,22 @@ export class EscrowClient {
         isWritable: false,
       },
       {
+        pubkey: key,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
         pubkey: SYSVAR_RENT_PUBKEY,
         isSigner: false,
         isWritable: false,
       },
       {
         pubkey: spl.TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SystemProgram.programId,
         isSigner: false,
         isWritable: false,
       },
