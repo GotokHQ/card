@@ -235,6 +235,7 @@ export class EscrowClient {
       pubKey: sig.publicKey.toBase58(),
     }));
     const serializeInWireFormat = input.serializeInWireFormat ?? false;
+    console.log('serializeInWireFormat', serializeInWireFormat);
     return {
       signatures: signatures,
       message: serializeInWireFormat
