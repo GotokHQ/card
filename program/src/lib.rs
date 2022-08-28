@@ -21,12 +21,12 @@ pub fn find_program_authority(program_id: &Pubkey) -> (Pubkey, u8) {
 }
 
 /// Generates deposit program address
-pub fn find_deposit_program_address(program_id: &Pubkey, key: &Pubkey) -> (Pubkey, u8) {
+pub fn find_deposit_program_address(program_id: &Pubkey, reference: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             PREFIX.as_bytes(),
             program_id.as_ref(),
-            key.as_ref(),
+            reference.as_ref(),
             Deposit::PREFIX.as_bytes(),
         ],
         program_id,
@@ -34,12 +34,12 @@ pub fn find_deposit_program_address(program_id: &Pubkey, key: &Pubkey) -> (Pubke
 }
 
 /// Generates withraw program address
-pub fn find_withdrawal_program_address(program_id: &Pubkey, key: &Pubkey) -> (Pubkey, u8) {
+pub fn find_withdrawal_program_address(program_id: &Pubkey, reference: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             PREFIX.as_bytes(),
             program_id.as_ref(),
-            key.as_ref(),
+            reference.as_ref(),
             Withdraw::PREFIX.as_bytes(),
         ],
         program_id,
@@ -47,12 +47,12 @@ pub fn find_withdrawal_program_address(program_id: &Pubkey, key: &Pubkey) -> (Pu
 }
 
 /// Generates escrow program address
-pub fn find_escrow_program_address(program_id: &Pubkey, key: &Pubkey) -> (Pubkey, u8) {
+pub fn find_escrow_program_address(program_id: &Pubkey, reference: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             PREFIX.as_bytes(),
             program_id.as_ref(),
-            key.as_ref(),
+            reference.as_ref(),
             Escrow::PREFIX.as_bytes(),
         ],
         program_id,

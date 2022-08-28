@@ -193,10 +193,10 @@ export class EscrowClient {
   initialize = async (input: InitializePaymentInput): Promise<InitializePaymentOutput> => {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
-    const key = new PublicKey(input.key);
+    const reference = new PublicKey(input.reference);
     const serializeInWireFormat = input.serializeInWireFormat ?? false;
     const [vaultOwner] = await CardProgram.findProgramAuthority();
-    const [escrow, bump] = await CardProgram.findEscrowAccount(key);
+    const [escrow, bump] = await CardProgram.findEscrowAccount(reference);
     const vaultTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
       this.connection,
       this.feePayer,
@@ -225,7 +225,7 @@ export class EscrowClient {
       amount: amount,
       feeBps,
       fixedFee,
-      key: key,
+      reference,
       wallet: walletAddress,
       authority: this.authority.publicKey,
       payer: this.feePayer.publicKey,
@@ -263,7 +263,7 @@ export class EscrowClient {
       amount,
       feeBps,
       fixedFee,
-      key,
+      reference,
       bump,
       wallet,
       authority,
@@ -333,7 +333,7 @@ export class EscrowClient {
         isWritable: false,
       },
       {
-        pubkey: key,
+        pubkey: reference,
         isSigner: false,
         isWritable: false,
       },

@@ -13,7 +13,7 @@ export interface Sig {
 export interface InitializePaymentInput {
   wallet: string;
   mint: string;
-  key: string;
+  reference: string;
   amount: number;
   feeBps?: number;
   fixedFee?: string;

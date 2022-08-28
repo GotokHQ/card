@@ -29,7 +29,7 @@ export type InitEscrowParams = {
   amount: BN;
   feeBps: number;
   fixedFee: BN;
-  key: PublicKey;
+  reference: PublicKey;
   bump: number;
   wallet: PublicKey;
   authority: PublicKey;
