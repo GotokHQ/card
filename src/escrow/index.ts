@@ -16,6 +16,7 @@ import { InitEscrowArgs, InitEscrowParams } from '../transactions/InitEscrow';
 import { CancelEscrowArgs, CancelEscrowParams } from '../transactions/CancelEscrow';
 import { CloseEscrowArgs, CloseEscrowParams } from '../transactions/CloseEscrow';
 import { SettleEscrowArgs, SettleEscrowParams } from '../transactions/SettleEscrow';
+import { InitDepositArgs, InitDepositParams } from 'src/transactions';
 
 export const FAILED_TO_FIND_ACCOUNT = 'Failed to find account';
 export const INVALID_ACCOUNT_OWNER = 'Invalid account owner';
@@ -190,7 +191,7 @@ export class EscrowClient {
     });
   };
 
-  initialize = async (input: InitializePaymentInput): Promise<InitializePaymentOutput> => {
+  initializeEscrow = async (input: InitializePaymentInput): Promise<InitializePaymentOutput> => {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
@@ -334,6 +335,146 @@ export class EscrowClient {
       },
       {
         pubkey: reference,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SYSVAR_RENT_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SystemProgram.programId,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: spl.TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+    ];
+    return new TransactionInstruction({
+      keys,
+      data,
+      programId: CardProgram.PUBKEY,
+    });
+  };
+
+  initializeDeposit = async (input: InitializePaymentInput): Promise<InitializePaymentOutput> => {
+    const walletAddress = new PublicKey(input.wallet);
+    const mint = new PublicKey(input.mint);
+    const reference = new PublicKey(input.reference);
+    const serializeInWireFormat = input.serializeInWireFormat ?? false;
+    const [deposit, bump] = await CardProgram.findDepositAccount(reference);
+    const amount = new BN(input.amount);
+    const feeBps = input.feeBps ?? 0;
+    // const fixedFee = new BN(input.fixedFee ?? 0);
+    const [sourceToken, destinationToken, collectionFeeToken] = await Promise.all([
+      _findAssociatedTokenAddress(walletAddress, mint),
+      _findAssociatedTokenAddress(this.fundingWallet, mint),
+      _findAssociatedTokenAddress(this.feeWallet, mint),
+    ]);
+    const depositParams: InitDepositParams = {
+      mint,
+      user: walletAddress,
+      bump,
+      deposit,
+      sourceToken,
+      collectionToken: destinationToken,
+      collectionFeeToken,
+      amount: amount,
+      feeBps,
+      key: reference,
+      authority: this.authority.publicKey,
+      payer: this.feePayer.publicKey,
+    };
+
+    const transaction = new Transaction();
+    transaction.add(this.initDeposit(depositParams));
+    if (input.memo) {
+      transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    const { blockhash } = await this.connection.getLatestBlockhash('finalized');
+    console.log('latestblockhash', blockhash);
+    console.log('serializeInWireFormat', serializeInWireFormat);
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = this.feePayer.publicKey;
+    transaction.partialSign(this.feePayer, this.authority);
+    const signatures = transaction.signatures.map((sig) => ({
+      signature: sig.signature?.toString('base64'),
+      pubKey: sig.publicKey.toBase58(),
+    }));
+    return {
+      signatures,
+      message: serializeInWireFormat
+        ? transaction
+            .serialize({
+              requireAllSignatures: false,
+            })
+            .toString('base64')
+        : transaction.serializeMessage().toString('base64'),
+    };
+  };
+
+  initDeposit = (params: InitDepositParams) => {
+    const {
+      amount,
+      feeBps,
+      key,
+      bump,
+      user,
+      authority,
+      deposit,
+      sourceToken,
+      collectionToken,
+      collectionFeeToken,
+      mint,
+    } = params;
+    const data = InitDepositArgs.serialize({
+      amount,
+      feeBps,
+      bump,
+      key: key.toBase58(),
+    });
+    const keys = [
+      {
+        pubkey: user,
+        isSigner: true,
+        isWritable: false,
+      },
+      {
+        pubkey: authority,
+        isSigner: true,
+        isWritable: false,
+      },
+      {
+        pubkey: this.feePayer.publicKey,
+        isSigner: true,
+        isWritable: false,
+      },
+      {
+        pubkey: deposit,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: sourceToken,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: collectionToken,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: collectionFeeToken,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: mint,
         isSigner: false,
         isWritable: false,
       },
