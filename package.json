@@ -32,7 +32,7 @@
     "author": "PassBook Maintainers <contact@gotok.app>",
     "license": "MIT",
     "dependencies": {
-        "@metaplex-foundation/mpl-core": "^0.6.1",
+        "@metaplex-foundation/mpl-core": "^0.0.2",
         "@solana/spl-token": "^0.3.4",
         "@solana/web3.js": "^1.54.0",
         "@types/bn.js": "^5.1.0",

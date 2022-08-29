@@ -17,6 +17,7 @@ export type EscrowDataArgs = {
   isCanceled: boolean;
   amount: BN;
   feeBps: number;
+  fixedFee: BN;
   srcToken: StringPublicKey;
   dstToken: StringPublicKey;
   vaultToken: StringPublicKey;
