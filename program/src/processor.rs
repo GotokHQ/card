@@ -15,7 +15,9 @@ impl Processor {
         accounts: &[AccountInfo],
         instruction_data: &[u8],
     ) -> ProgramResult {
+        msg!("Start deserialize card instruction");
         let instruction = CardInstruction::try_from_slice(instruction_data)?;
+        msg!("Successfully deserialized card instruction");
 
         match instruction {
             CardInstruction::InitDeposit(args) => {

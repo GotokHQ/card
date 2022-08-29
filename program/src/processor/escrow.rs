@@ -63,7 +63,6 @@ pub fn process_init_escrow(
     let reference_info = next_account_info(account_info_iter)?;
     let rent_info = next_account_info(account_info_iter)?;
     let system_account_info = next_account_info(account_info_iter)?;
-    msg!("Read system_account_info");
     let is_native = cmp_pubkeys(mint_info.key, &spl_token::native_mint::id());
 
     if is_native {
@@ -104,7 +103,7 @@ pub fn process_init_escrow(
 
     let fee_from_bps = calculate_fee(args.amount, args.fee_bps as u64)?;
     let total_fee = fee_from_bps
-        .checked_add(args.fee_fixed)
+        .checked_add(args.fixed_fee)
         .ok_or::<ProgramError>(CardError::MathOverflow.into())?;
     let total = args
         .amount
@@ -144,7 +143,7 @@ pub fn process_init_escrow(
     escrow.is_settled = false;
     escrow.is_canceled = false;
     escrow.fee_bps = args.fee_bps;
-    escrow.fixed_fee = args.fee_fixed;
+    escrow.fixed_fee = args.fixed_fee;
     escrow.src_token = *src_token_info.key;
     escrow.dst_token = *dst_token_info.key;
     escrow.vault_token = *vault_token_info.key;

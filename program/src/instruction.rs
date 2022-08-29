@@ -13,13 +13,9 @@ use solana_program::{
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
 /// Initialize a funding params
 pub struct DepositArgs {
-    /// The total amount of token X to be paid by the payer
     pub amount: u64,
-    /// The fee to collect
     pub fee_bps: u16,
-    /// The unique transaction key
     pub key: Pubkey,
-    /// bump seed associated with key
     pub bump: u8,
 }
 
@@ -28,13 +24,9 @@ pub struct DepositArgs {
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
 /// Initialize a funding params
 pub struct WithdrawArgs {
-    /// The total amount of token X to be refunded back to the payer
     pub amount: u64,
-    /// The fee to collect
     pub fee_bps: u16,
-    /// The unique transaction key
     pub key: Pubkey,
-    /// bump seed associated with key
     pub bump: u8,
 }
 
@@ -45,12 +37,12 @@ pub struct WithdrawArgs {
 pub struct InitEscrowArgs {
     pub amount: u64,
     pub fee_bps: u16,
-    pub fee_fixed: u64,
+    pub fixed_fee: u64,
     pub bump: u8,
 }
 
 #[repr(C)]
-#[derive(BorshSerialize, BorshDeserialize, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq, Clone,)]
 pub enum CardInstruction {
     /// Accounts expected:
     ///
@@ -232,8 +224,8 @@ pub fn init_escrow(
         AccountMeta::new_readonly(*mint, false),
         AccountMeta::new_readonly(*reference, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
-        AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
+        AccountMeta::new_readonly(spl_token::id(), false),
     ];
 
     Instruction::new_with_borsh(
