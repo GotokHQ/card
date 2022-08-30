@@ -87,18 +87,28 @@ pub fn process_init_escrow(
             Some(CardError::InvalidFeeTokenOwner),
         )?;
     } else {
+        msg!("Assert vault token {} is owned by spl token {}", vault_token_info.key, spl_token::id());
         assert_owned_by(vault_token_info, &spl_token::id())?;
+        msg!("Assert src token {} is owned by spl token {}", src_token_info.key, spl_token::id());
         assert_owned_by(src_token_info, &spl_token::id())?;
+        msg!("Assert dst token {} is owned by spl token {}", dst_token_info.key, spl_token::id());
         assert_owned_by(dst_token_info, &spl_token::id())?;
+        msg!("Assert fee token {} is owned by spl token {}", fee_token_info.key, spl_token::id());
         assert_owned_by(fee_token_info, &spl_token::id())?;
+        msg!("Done token asserts");
         let vault_token = TokenAccount::unpack(&vault_token_info.data.borrow())?;
         let src_token: TokenAccount = assert_initialized(src_token_info)?;
         let dst_token: TokenAccount = assert_initialized(dst_token_info)?;
         let fee_token: TokenAccount = assert_initialized(fee_token_info)?;
-        assert_token_owned_by(&vault_token, &vault_owner_key)?;
+        msg!("Assert vault token is owned by vault owner {}", vault_owner_info.key);
+        assert_token_owned_by(&vault_token, &vault_owner_info.key)?;
+        msg!("Assert src token is owned by wallet {}",  wallet_info.key);
         assert_token_owned_by(&src_token, wallet_info.key)?;
+        msg!("Assert dst token is owned by deposit wallet {}",  deposit::id());
         assert_token_owned_by(&dst_token, &deposit::id())?;
+        msg!("Assert fee token is owned by fee wallet {}",  fee::id());
         assert_token_owned_by(&fee_token, &fee::id())?;
+        msg!("Done token account asserts");
     }
 
     let fee_from_bps = calculate_fee(args.amount, args.fee_bps as u64)?;
