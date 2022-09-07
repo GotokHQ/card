@@ -18,7 +18,6 @@ export interface InitializePaymentInput {
   feeBps?: number;
   fixedFee?: string;
   memo?: string;
-  serializeInWireFormat?: boolean;
   commitment?: Commitment;
 }
 export interface EscrowInput {

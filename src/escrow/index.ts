@@ -195,7 +195,6 @@ export class EscrowClient {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
-    const serializeInWireFormat = input.serializeInWireFormat ?? false;
     const [vaultOwner] = await CardProgram.findProgramAuthority();
     const [escrow, bump] = await CardProgram.findEscrowAccount(reference);
     const vaultTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
@@ -205,7 +204,6 @@ export class EscrowClient {
       vaultOwner,
       true,
     );
-
     const amount = new BN(input.amount);
     const feeBps = input.feeBps ?? 0;
     const fixedFee = new BN(input.fixedFee ?? 0);
@@ -237,9 +235,7 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    const { blockhash } = await this.connection.getLatestBlockhash('finalized');
-    console.log('latestblockhash', blockhash);
-    console.log('serializeInWireFormat', serializeInWireFormat);
+    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
@@ -249,13 +245,11 @@ export class EscrowClient {
     }));
     return {
       signatures,
-      message: serializeInWireFormat
-        ? transaction
-            .serialize({
-              requireAllSignatures: false,
-            })
-            .toString('base64')
-        : transaction.serializeMessage().toString('base64'),
+      message: transaction
+        .serialize({
+          requireAllSignatures: false,
+        })
+        .toString('base64'),
     };
   };
 
@@ -365,7 +359,6 @@ export class EscrowClient {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
-    const serializeInWireFormat = input.serializeInWireFormat ?? false;
     const [deposit, bump] = await CardProgram.findDepositAccount(reference);
     const amount = new BN(input.amount);
     const feeBps = input.feeBps ?? 0;
@@ -395,9 +388,7 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
-    const { blockhash } = await this.connection.getLatestBlockhash('finalized');
-    console.log('latestblockhash', blockhash);
-    console.log('serializeInWireFormat', serializeInWireFormat);
+    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
@@ -407,13 +398,11 @@ export class EscrowClient {
     }));
     return {
       signatures,
-      message: serializeInWireFormat
-        ? transaction
-            .serialize({
-              requireAllSignatures: false,
-            })
-            .toString('base64')
-        : transaction.serializeMessage().toString('base64'),
+      message: transaction
+        .serialize({
+          requireAllSignatures: false,
+        })
+        .toString('base64'),
     };
   };
 
