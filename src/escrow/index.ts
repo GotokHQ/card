@@ -9,7 +9,7 @@ import {
 } from '@solana/web3.js';
 import * as spl from '@solana/spl-token';
 import BN from 'bn.js';
-import { InitializePaymentInput, InitializePaymentOutput, EscrowInput } from './types';
+import { InitializePaymentInput, EscrowInput } from './types';
 import { CardProgram } from '../cardProgram';
 import { Escrow } from '../accounts/escrow';
 import { InitEscrowArgs, InitEscrowParams } from '../transactions/InitEscrow';
@@ -191,7 +191,7 @@ export class EscrowClient {
     });
   };
 
-  initializeEscrow = async (input: InitializePaymentInput): Promise<InitializePaymentOutput> => {
+  initializeEscrow = async (input: InitializePaymentInput): Promise<string> => {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
@@ -239,18 +239,11 @@ export class EscrowClient {
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
-    const signatures = transaction.signatures.map((sig) => ({
-      signature: sig.signature?.toString('base64'),
-      pubKey: sig.publicKey.toBase58(),
-    }));
-    return {
-      signatures,
-      message: transaction
-        .serialize({
-          requireAllSignatures: false,
-        })
-        .toString('base64'),
-    };
+    return transaction
+      .serialize({
+        requireAllSignatures: false,
+      })
+      .toString('base64');
   };
 
   initInstruction = (params: InitEscrowParams): TransactionInstruction => {
@@ -355,7 +348,7 @@ export class EscrowClient {
     });
   };
 
-  initializeDeposit = async (input: InitializePaymentInput): Promise<InitializePaymentOutput> => {
+  initializeDeposit = async (input: InitializePaymentInput): Promise<string> => {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
@@ -392,18 +385,11 @@ export class EscrowClient {
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
-    const signatures = transaction.signatures.map((sig) => ({
-      signature: sig.signature?.toString('base64'),
-      pubKey: sig.publicKey.toBase58(),
-    }));
-    return {
-      signatures,
-      message: transaction
-        .serialize({
-          requireAllSignatures: false,
-        })
-        .toString('base64'),
-    };
+    return transaction
+      .serialize({
+        requireAllSignatures: false,
+      })
+      .toString('base64');
   };
 
   initDeposit = (params: InitDepositParams) => {

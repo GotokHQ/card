@@ -1,15 +1,4 @@
 import { Commitment } from '@solana/web3.js';
-
-export interface InitializePaymentOutput {
-  message: string;
-  signatures: Sig[];
-}
-
-export interface Sig {
-  pubKey: string;
-  signature?: string | null;
-}
-
 export interface InitializePaymentInput {
   wallet: string;
   mint: string;
