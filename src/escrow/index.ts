@@ -603,6 +603,17 @@ export class EscrowClient {
       programId: MEMO_PROGRAM_ID,
     });
   };
+
+  getEscrow = async (address: PublicKey): Promise<Escrow> => {
+    try {
+      return await _getEscrowAccount(this.connection, address);
+    } catch (error) {
+      if (error.message === FAILED_TO_FIND_ACCOUNT) {
+        return null;
+      }
+      throw error;
+    }
+  };
 }
 
 const _findAssociatedTokenAddress = async (
