@@ -17,6 +17,7 @@ import { CancelEscrowArgs, CancelEscrowParams } from '../transactions/CancelEscr
 import { CloseEscrowArgs, CloseEscrowParams } from '../transactions/CloseEscrow';
 import { SettleEscrowArgs, SettleEscrowParams } from '../transactions/SettleEscrow';
 import { InitDepositArgs, InitDepositParams } from '../transactions/InitDeposit';
+import { InitWithdrawParams } from 'src/transactions';
 
 export const FAILED_TO_FIND_ACCOUNT = 'Failed to find account';
 export const INVALID_ACCOUNT_OWNER = 'Invalid account owner';
@@ -35,6 +36,7 @@ export class EscrowClient {
   private authority: Keypair;
   private feeWallet: PublicKey;
   private fundingWallet: PublicKey;
+  private withdrawalWallet: PublicKey;
   private connection: Connection;
 
   constructor(
@@ -42,12 +44,14 @@ export class EscrowClient {
     authority: Keypair,
     feeWallet: PublicKey,
     fundingWallet: PublicKey,
+    withdrawalWallet: PublicKey,
     connection: Connection,
   ) {
     this.feePayer = feePayer;
     this.authority = authority;
     this.feeWallet = feeWallet;
     this.fundingWallet = fundingWallet;
+    this.withdrawalWallet = withdrawalWallet;
     this.connection = connection;
   }
 
@@ -440,6 +444,134 @@ export class EscrowClient {
       },
       {
         pubkey: collectionToken,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: collectionFeeToken,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: mint,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SYSVAR_RENT_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SystemProgram.programId,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: spl.TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+    ];
+    return new TransactionInstruction({
+      keys,
+      data,
+      programId: CardProgram.PUBKEY,
+    });
+  };
+
+  initializeWithdrawal = async (input: InitializePaymentInput): Promise<string> => {
+    const walletAddress = new PublicKey(input.wallet);
+    const mint = new PublicKey(input.mint);
+    const reference = new PublicKey(input.reference);
+    const [withdraw, bump] = await CardProgram.findWithdrawAccount(reference);
+    const amount = new BN(input.amount);
+    const feeBps = input.feeBps ?? 0;
+    // const fixedFee = new BN(input.fixedFee ?? 0);
+    const [sourceToken, destinationToken, collectionFeeToken] = await Promise.all([
+      _findAssociatedTokenAddress(this.withdrawalWallet, mint),
+      _findAssociatedTokenAddress(walletAddress, mint),
+      _findAssociatedTokenAddress(this.feeWallet, mint),
+    ]);
+    const withdrawalParams: InitWithdrawParams = {
+      mint,
+      wallet: this.withdrawalWallet,
+      bump,
+      withdraw,
+      sourceToken,
+      destinationToken,
+      collectionFeeToken,
+      amount: amount,
+      feeBps,
+      key: reference,
+      authority: this.authority.publicKey,
+      payer: this.feePayer.publicKey,
+    };
+
+    const transaction = new Transaction();
+    transaction.add(this.initWithdrawal(withdrawalParams));
+    if (input.memo) {
+      transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = this.feePayer.publicKey;
+    transaction.partialSign(this.feePayer, this.authority);
+    return transaction
+      .serialize({
+        requireAllSignatures: false,
+      })
+      .toString('base64');
+  };
+
+  initWithdrawal = (params: InitWithdrawParams) => {
+    const {
+      amount,
+      feeBps,
+      key,
+      bump,
+      wallet,
+      authority,
+      withdraw,
+      sourceToken,
+      destinationToken,
+      collectionFeeToken,
+      mint,
+    } = params;
+    const data = InitDepositArgs.serialize({
+      amount,
+      feeBps,
+      bump,
+      key: key.toBase58(),
+    });
+    const keys = [
+      {
+        pubkey: wallet,
+        isSigner: true,
+        isWritable: false,
+      },
+      {
+        pubkey: authority,
+        isSigner: true,
+        isWritable: false,
+      },
+      {
+        pubkey: this.feePayer.publicKey,
+        isSigner: true,
+        isWritable: false,
+      },
+      {
+        pubkey: withdraw,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: sourceToken,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: destinationToken,
         isSigner: false,
         isWritable: true,
       },

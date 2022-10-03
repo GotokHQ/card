@@ -18,7 +18,7 @@ export class InitWithdrawArgs extends Borsh.Data<Args> {
     ['bump', 'u8'],
   ]);
 
-  instruction = 0;
+  instruction = 1;
   amount: BN;
   feeBps: number;
   key: StringPublicKey;
