@@ -34,9 +34,9 @@ export const MEMO_PROGRAM_ID = new PublicKey('Memo1UhkJRfHyvLMcVucJwxXeuD728EqVD
 export class EscrowClient {
   private feePayer: Keypair;
   private authority: Keypair;
+  private withdrawalWallet: Keypair;
   private feeWallet: PublicKey;
   private fundingWallet: PublicKey;
-  private withdrawalWallet: PublicKey;
   private connection: Connection;
 
   constructor(
@@ -44,7 +44,7 @@ export class EscrowClient {
     authority: Keypair,
     feeWallet: PublicKey,
     fundingWallet: PublicKey,
-    withdrawalWallet: PublicKey,
+    withdrawalWallet: Keypair,
     connection: Connection,
   ) {
     this.feePayer = feePayer;
@@ -489,13 +489,13 @@ export class EscrowClient {
     const feeBps = input.feeBps ?? 0;
     // const fixedFee = new BN(input.fixedFee ?? 0);
     const [sourceToken, destinationToken, collectionFeeToken] = await Promise.all([
-      _findAssociatedTokenAddress(this.withdrawalWallet, mint),
+      _findAssociatedTokenAddress(this.withdrawalWallet.publicKey, mint),
       _findAssociatedTokenAddress(walletAddress, mint),
       _findAssociatedTokenAddress(this.feeWallet, mint),
     ]);
     const withdrawalParams: InitWithdrawParams = {
       mint,
-      wallet: this.withdrawalWallet,
+      wallet: this.withdrawalWallet.publicKey,
       bump,
       withdraw,
       sourceToken,
@@ -516,7 +516,7 @@ export class EscrowClient {
     const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
-    transaction.partialSign(this.feePayer, this.authority);
+    transaction.partialSign(this.feePayer, this.authority, this.withdrawalWallet);
     return transaction
       .serialize({
         requireAllSignatures: false,
