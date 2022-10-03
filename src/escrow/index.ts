@@ -17,7 +17,7 @@ import { CancelEscrowArgs, CancelEscrowParams } from '../transactions/CancelEscr
 import { CloseEscrowArgs, CloseEscrowParams } from '../transactions/CloseEscrow';
 import { SettleEscrowArgs, SettleEscrowParams } from '../transactions/SettleEscrow';
 import { InitDepositArgs, InitDepositParams } from '../transactions/InitDeposit';
-import { InitWithdrawParams } from 'src/transactions';
+import { InitWithdrawParams } from '../transactions';
 
 export const FAILED_TO_FIND_ACCOUNT = 'Failed to find account';
 export const INVALID_ACCOUNT_OWNER = 'Invalid account owner';
