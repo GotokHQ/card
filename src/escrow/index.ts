@@ -18,6 +18,7 @@ import { CloseEscrowArgs, CloseEscrowParams } from '../transactions/CloseEscrow'
 import { SettleEscrowArgs, SettleEscrowParams } from '../transactions/SettleEscrow';
 import { InitDepositArgs, InitDepositParams } from '../transactions/InitDeposit';
 import { InitWithdrawParams } from '../transactions';
+import { Deposit, Withdraw } from 'src/accounts';
 
 export const FAILED_TO_FIND_ACCOUNT = 'Failed to find account';
 export const INVALID_ACCOUNT_OWNER = 'Invalid account owner';
@@ -752,6 +753,28 @@ export class EscrowClient {
       throw error;
     }
   };
+
+  getWithdraw = async (address: PublicKey): Promise<Withdraw> => {
+    try {
+      return await _getWithdrawAccount(this.connection, address);
+    } catch (error) {
+      if (error.message === FAILED_TO_FIND_ACCOUNT) {
+        return null;
+      }
+      throw error;
+    }
+  };
+
+  getDeposit = async (address: PublicKey): Promise<Withdraw> => {
+    try {
+      return await _getDepositAccount(this.connection, address);
+    } catch (error) {
+      if (error.message === FAILED_TO_FIND_ACCOUNT) {
+        return null;
+      }
+      throw error;
+    }
+  };
 }
 
 const _findAssociatedTokenAddress = async (
@@ -779,6 +802,39 @@ const _getEscrowAccount = async (
       throw new Error(FAILED_TO_FIND_ACCOUNT);
     }
     return escrow;
+  } catch (error) {
+    throw new Error(FAILED_TO_FIND_ACCOUNT);
+  }
+};
+
+const _getWithdrawAccount = async (
+  connection: Connection,
+  address: PublicKey,
+): Promise<Withdraw> => {
+  try {
+    const withdraw = await Withdraw.load(connection, address);
+    if (!withdraw || !withdraw.info) {
+      throw new Error(FAILED_TO_FIND_ACCOUNT);
+    }
+    if (!withdraw || !withdraw.info) {
+      throw new Error(FAILED_TO_FIND_ACCOUNT);
+    }
+    return withdraw;
+  } catch (error) {
+    throw new Error(FAILED_TO_FIND_ACCOUNT);
+  }
+};
+
+const _getDepositAccount = async (connection: Connection, address: PublicKey): Promise<Deposit> => {
+  try {
+    const deposit = await Deposit.load(connection, address);
+    if (!deposit || !deposit.info) {
+      throw new Error(FAILED_TO_FIND_ACCOUNT);
+    }
+    if (!deposit || !deposit.info) {
+      throw new Error(FAILED_TO_FIND_ACCOUNT);
+    }
+    return deposit;
   } catch (error) {
     throw new Error(FAILED_TO_FIND_ACCOUNT);
   }
