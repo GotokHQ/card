@@ -84,6 +84,7 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: DepositArgs) ->
             PREFIX.as_bytes(),
             program_id.as_ref(),
             args.key.as_ref(),
+            Deposit::PREFIX.as_bytes(),
             &[args.bump],
         ],
     )?;

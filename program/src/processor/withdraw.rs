@@ -79,6 +79,7 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -
             PREFIX.as_bytes(),
             program_id.as_ref(),
             args.key.as_ref(),
+            Withdraw::PREFIX.as_bytes(),
             &[args.bump],
         ],
     )?;
