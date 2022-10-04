@@ -17,7 +17,7 @@ import { CancelEscrowArgs, CancelEscrowParams } from '../transactions/CancelEscr
 import { CloseEscrowArgs, CloseEscrowParams } from '../transactions/CloseEscrow';
 import { SettleEscrowArgs, SettleEscrowParams } from '../transactions/SettleEscrow';
 import { InitDepositArgs, InitDepositParams } from '../transactions/InitDeposit';
-import { InitWithdrawParams } from '../transactions';
+import { InitWithdrawArgs, InitWithdrawParams } from '../transactions';
 import { Deposit, Withdraw } from '../accounts';
 
 export const FAILED_TO_FIND_ACCOUNT = 'Failed to find account';
@@ -545,7 +545,7 @@ export class EscrowClient {
       collectionFeeToken,
       mint,
     } = params;
-    const data = InitDepositArgs.serialize({
+    const data = InitWithdrawArgs.serialize({
       amount,
       feeBps,
       bump,
