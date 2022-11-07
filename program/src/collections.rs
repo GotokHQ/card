@@ -1,10 +1,10 @@
 
 pub mod deposit {
-    solana_program::declare_id!("ARFbqJgn1pG59taaxe5aXeMuepGu7o2DNCyAePpCWQmi");
+    solana_program::declare_id!("3zvXV9s2F8yQt54GdDLprLxHARkXpuZwm4FaUsAJTRmF");
 }
 
 pub mod fee {
-    solana_program::declare_id!("5s7ZmpwRmzTRfKpzz6EX4aCnkKzCboEMjALN2YQt3dMZ");
+    solana_program::declare_id!("BjCXn4yRGxBuANNHwxt6sHcd1LKEJmHPJJHpWSSP3vFD");
 }
 
 pub mod authority {
