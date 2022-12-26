@@ -6,6 +6,7 @@ import {
   SystemProgram,
   Connection,
   Keypair,
+  Commitment,
 } from '@solana/web3.js';
 import * as spl from '@solana/spl-token';
 import BN from 'bn.js';
@@ -19,6 +20,7 @@ import { SettleEscrowArgs, SettleEscrowParams } from '../transactions/SettleEscr
 import { InitDepositArgs, InitDepositParams } from '../transactions/InitDeposit';
 import { InitWithdrawArgs, InitWithdrawParams } from '../transactions';
 import { Deposit, Withdraw } from '../accounts';
+import { Account } from '@metaplex-foundation/mpl-core';
 
 export const FAILED_TO_FIND_ACCOUNT = 'Failed to find account';
 export const INVALID_ACCOUNT_OWNER = 'Invalid account owner';
@@ -743,9 +745,9 @@ export class EscrowClient {
     });
   };
 
-  getEscrow = async (address: PublicKey): Promise<Escrow> => {
+  getEscrow = async (address: PublicKey, commitment?: Commitment): Promise<Escrow> => {
     try {
-      return await _getEscrowAccount(this.connection, address);
+      return await _getEscrowAccount(this.connection, address, commitment);
     } catch (error) {
       if (error.message === FAILED_TO_FIND_ACCOUNT) {
         return null;
@@ -792,18 +794,17 @@ const _findAssociatedTokenAddress = async (
 const _getEscrowAccount = async (
   connection: Connection,
   escrowAddress: PublicKey,
-): Promise<Escrow> => {
+  commitment?: Commitment,
+): Promise<Escrow | null> => {
   try {
-    const escrow = await Escrow.load(connection, escrowAddress);
-    if (!escrow || !escrow.info) {
+    const accountInfo = await connection.getAccountInfo(escrowAddress, commitment);
+    if (accountInfo == null) {
       throw new Error(FAILED_TO_FIND_ACCOUNT);
     }
-    if (!escrow || !escrow.info) {
-      throw new Error(FAILED_TO_FIND_ACCOUNT);
-    }
+    const escrow = Escrow.from(new Account(escrowAddress, accountInfo));
     return escrow;
   } catch (error) {
-    throw new Error(FAILED_TO_FIND_ACCOUNT);
+    return null;
   }
 };
 
