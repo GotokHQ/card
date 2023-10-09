@@ -4,13 +4,14 @@ export interface InitializePaymentInput {
   mint: string;
   reference: string;
   amount: string;
-  feeBps?: number;
-  fixedFee?: string;
+  fee?: string;
   memo?: string;
   commitment?: Commitment;
 }
 export interface EscrowInput {
   escrowAddress: string;
+  dstTokenAddress: string;
+  feeTokenAddress: string;
   memo?: string;
   commitment?: Commitment;
 }

@@ -37,7 +37,7 @@ pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
 
 /// Assert owned by
 pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
-    if account.owner != owner {
+    if !cmp_pubkeys(&account.owner, owner)  {
         Err(CardError::InvalidOwner.into())
     } else {
         Ok(())
@@ -46,7 +46,7 @@ pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
 
 /// Assert owned by
 pub fn assert_token_owned_by(token: &Account, owner: &Pubkey) -> ProgramResult {
-    if token.owner != *owner {
+    if !cmp_pubkeys(&token.owner, owner) {
         Err(CardError::InvalidOwner.into())
     } else {
         Ok(())
@@ -59,7 +59,7 @@ pub fn assert_account_key(
     key: &Pubkey,
     error: Option<CardError>,
 ) -> ProgramResult {
-    if *account_info.key != *key {
+    if !cmp_pubkeys(account_info.key, &key) {
         match error {
             Some(e) => Err(e.into()),
             _ => Err(ProgramError::InvalidArgument),
@@ -158,6 +158,28 @@ pub fn native_transfer<'a>(
         // for native SOL transfer user_wallet key == user_token_account key
         &system_instruction::transfer(&source.key, &destination.key, amount),
         &[source.clone(), destination.clone()],
+        signers_seeds,
+    )
+}
+
+/// SPL transfer instruction.
+pub fn spl_token_close<'a>(
+    source: &AccountInfo<'a>,
+    destination: &AccountInfo<'a>,
+    authority: &AccountInfo<'a>,
+    signers_seeds: &[&[&[u8]]],
+) -> Result<(), ProgramError> {
+    let ix = spl_token::instruction::close_account(
+        &spl_token::id(),
+        source.key,
+        destination.key,
+        authority.key,
+        &[],
+    )?;
+
+    invoke_signed(
+        &ix,
+        &[source.clone(), destination.clone(), authority.clone()],
         signers_seeds,
     )
 }

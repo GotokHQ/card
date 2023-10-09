@@ -14,7 +14,7 @@ use solana_program::{
 /// Initialize a funding params
 pub struct DepositArgs {
     pub amount: u64,
-    pub fee_bps: u16,
+    pub fee: u64,
     pub key: Pubkey,
     pub bump: u8,
 }
@@ -25,7 +25,7 @@ pub struct DepositArgs {
 /// Initialize a funding params
 pub struct WithdrawArgs {
     pub amount: u64,
-    pub fee_bps: u16,
+    pub fee: u64,
     pub key: Pubkey,
     pub bump: u8,
 }
@@ -36,8 +36,7 @@ pub struct WithdrawArgs {
 /// Initialize a escrow params
 pub struct InitEscrowArgs {
     pub amount: u64,
-    pub fee_bps: u16,
-    pub fixed_fee: u64,
+    pub fee: u64,
     pub bump: u8,
 }
 
@@ -51,11 +50,9 @@ pub enum CardInstruction {
     /// 2. `[signer]` The fee payer
     /// 3. `[writable]` The deposit account, it will hold all necessary info about the transaction.
     /// 4. `[writable]` The source token account that will fund the transaction
-    /// 5. `[writable]` The collection token account that will receive the amount
-    /// 6. `[writable]` The collection fee token account that will receive the fee if the transaction is successful
-    /// 7. `[]` The token mint
-    /// 8. `[]` The rent sysvar
-    /// 9. `[]` The token program
+    /// 5. `[]` The token mint
+    /// 6. `[]` The rent sysvar
+    /// 7. `[]` The token program
     InitDeposit(DepositArgs),
 
     /// Accounts expected:
@@ -105,19 +102,6 @@ pub enum CardInstruction {
     /// 6. `[]` The PDA account
     /// 7. `[]` The token program
     Settle,
-    /// Cancel the escrow
-    ///
-    ///
-    /// Accounts expected:
-    ///
-    /// 0. `[signer]` The account of the authority
-    /// 1. `[writable]` The escrow account holding the escrow info   
-    /// 2. `[writable]` The src token account of the payer that initialized the escrow  
-    /// 3. `[writable]` The vault token account to get tokens from and eventually close
-    /// 4. `[]` The token mint 
-    /// 5. `[]` The PDA account
-    /// 6. `[]` The token program
-    Cancel,
     /// Close the escrow
     ///
     ///
@@ -133,7 +117,6 @@ pub enum CardInstruction {
 pub fn deposit(
     program_id: &Pubkey,
     user: &Pubkey,
-    authority: &Pubkey,
     payer: &Pubkey,
     deposit: &Pubkey,
     source_token: &Pubkey,
@@ -145,7 +128,6 @@ pub fn deposit(
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*user, true),
-        AccountMeta::new_readonly(*authority, true),
         AccountMeta::new(*payer, true),
         AccountMeta::new(*deposit, false),
         AccountMeta::new(*source_token, false),
@@ -165,7 +147,6 @@ pub fn deposit(
 pub fn withdraw(
     program_id: &Pubkey,
     wallet: &Pubkey,
-    authority: &Pubkey,
     payer: &Pubkey,
     withdraw: &Pubkey,
     source_token: &Pubkey,
@@ -176,7 +157,6 @@ pub fn withdraw(
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*wallet, true),
-        AccountMeta::new_readonly(*authority, true),
         AccountMeta::new(*payer, true),
         AccountMeta::new(*withdraw, false),
         AccountMeta::new(*source_token, false),
@@ -198,29 +178,23 @@ pub fn withdraw(
 /// Create `InitEscrow` instruction
 pub fn init_escrow(
     program_id: &Pubkey,
-    wallet: &Pubkey,
     authority: &Pubkey,
     payer: &Pubkey,
     escrow: &Pubkey,
     vault_owner: &Pubkey,
     vault_token: &Pubkey,
     source_token: &Pubkey,
-    destination_token: &Pubkey,
-    collection_fee_token: &Pubkey,
     mint: &Pubkey,
     reference: &Pubkey,
     args: InitEscrowArgs,
 ) -> Instruction {
     let accounts = vec![
-        AccountMeta::new_readonly(*wallet, true),
         AccountMeta::new_readonly(*authority, true),
         AccountMeta::new(*payer, true),
         AccountMeta::new(*escrow, false),
         AccountMeta::new_readonly(*vault_owner, false),
         AccountMeta::new(*vault_token, false),
         AccountMeta::new(*source_token, false),
-        AccountMeta::new(*destination_token, false),
-        AccountMeta::new(*collection_fee_token, false),
         AccountMeta::new_readonly(*mint, false),
         AccountMeta::new_readonly(*reference, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
@@ -254,6 +228,7 @@ pub fn settle_escrow(
         AccountMeta::new(*escrow, false),
         AccountMeta::new_readonly(*mint, false),
         AccountMeta::new_readonly(*vault_owner, false),
+        AccountMeta::new_readonly(sysvar::clock::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
@@ -265,45 +240,27 @@ pub fn settle_escrow(
     )
 }
 
-/// Create `CancelEscrow` instruction
-pub fn cancel_escrow(
-    program_id: &Pubkey,
-    authority: &Pubkey,
-    escrow: &Pubkey,
-    src_token: &Pubkey,
-    vault_token: &Pubkey,
-    mint: &Pubkey,
-    vault_owner: &Pubkey,
-) -> Instruction {
-    let accounts = vec![
-        AccountMeta::new_readonly(*authority, true),
-        AccountMeta::new(*escrow, false),
-        AccountMeta::new(*src_token, false),
-        AccountMeta::new(*vault_token, false),
-        AccountMeta::new_readonly(*mint, false),
-        AccountMeta::new_readonly(*vault_owner, false),
-        AccountMeta::new_readonly(spl_token::id(), false),
-        AccountMeta::new_readonly(system_program::id(), false),
-    ];
-
-    Instruction::new_with_borsh(
-        *program_id,
-        &CardInstruction::Cancel,
-        accounts,
-    )
-}
-
 /// Create `CloseEscrow` instruction
 pub fn close_escrow(
     program_id: &Pubkey,
     authority: &Pubkey,
     escrow: &Pubkey,
+    source_token: &Pubkey,
+    vault_owner: &Pubkey,
+    vault_token: &Pubkey,
+    mint: &Pubkey,
     fee_payer: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*authority, true),
         AccountMeta::new(*escrow, false),
+        AccountMeta::new(*source_token, false),
+        AccountMeta::new(*vault_token, false),
+        AccountMeta::new(*vault_owner, false),
+        AccountMeta::new_readonly(*mint, false),
         AccountMeta::new(*fee_payer, false),
+        AccountMeta::new_readonly(sysvar::rent::id(), false),
+        AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 

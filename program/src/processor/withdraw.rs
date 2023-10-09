@@ -1,10 +1,9 @@
 //! Init pass instruction processing
 
 use crate::{
-    collections::{authority, fee},
     error::CardError,
-    instruction::{WithdrawArgs},
-    state::{FLAG_ACCOUNT_SIZE, withdraw::{Withdraw}},
+    instruction::WithdrawArgs,
+    state::{FLAG_ACCOUNT_SIZE, withdraw::Withdraw},
     utils::*,
     PREFIX,
 };
@@ -23,7 +22,6 @@ use spl_token::state::Account;
 pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let wallet_info = next_account_info(account_info_iter)?;
-    let authority_info = next_account_info(account_info_iter)?;
     let payer_info = next_account_info(account_info_iter)?;
     let withdraw_info = next_account_info(account_info_iter)?;
     let source_token_info = next_account_info(account_info_iter)?;
@@ -34,13 +32,6 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -
     let system_account_info = next_account_info(account_info_iter)?;
 
     assert_signer(wallet_info)?;
-    assert_signer(authority_info)?;
-
-    assert_account_key(
-        authority_info,
-        &authority::id(),
-        Some(CardError::InvalidAuthorityId),
-    )?;
     if withdraw_info.lamports() > 0 && !withdraw_info.data_is_empty() {
         return Err(ProgramError::AccountAlreadyInitialized);
     }
@@ -57,15 +48,13 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -
     }
     assert_owned_by(collection_fee_token_info, &spl_token::id())?;
     let collection_fee_token: Account = assert_initialized(collection_fee_token_info)?;
-    assert_token_owned_by(&collection_fee_token, &fee::id())?;
+
     if collection_fee_token.mint != *mint_info.key {
         return Err(CardError::InvalidMint.into());
     }
 
-    let fee = calculate_fee(args.amount, args.fee_bps as u64)?;
-
     transfer(false, source_token_info, destination_token_info, wallet_info, args.amount, &[])?;
-    transfer(false, source_token_info, collection_fee_token_info, wallet_info, fee, &[])?;
+    transfer(false, source_token_info, collection_fee_token_info, wallet_info, args.fee, &[])?;
 
 
     create_new_account_raw(

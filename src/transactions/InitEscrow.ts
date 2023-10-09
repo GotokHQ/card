@@ -4,8 +4,7 @@ import BN from 'bn.js';
 
 type Args = {
   amount: BN;
-  feeBps: number;
-  fixedFee: BN;
+  fee: BN;
   bump: number;
 };
 
@@ -13,22 +12,19 @@ export class InitEscrowArgs extends Borsh.Data<Args> {
   static readonly SCHEMA = InitEscrowArgs.struct([
     ['instruction', 'u8'],
     ['amount', 'u64'],
-    ['feeBps', 'u16'],
-    ['fixedFee', 'u64'],
+    ['fee', 'u64'],
     ['bump', 'u8'],
   ]);
 
   instruction = 2;
   amount: BN;
-  feeBps: number;
-  fixedFee: BN;
+  fee: BN;
   bump: number;
 }
 
 export type InitEscrowParams = {
   amount: BN;
-  feeBps: number;
-  fixedFee: BN;
+  fee: BN;
   reference: PublicKey;
   bump: number;
   wallet: PublicKey;
@@ -38,7 +34,5 @@ export type InitEscrowParams = {
   vaultOwner: PublicKey;
   vaultToken: PublicKey;
   sourceToken: PublicKey;
-  destinationToken: PublicKey;
-  collectionFeeToken: PublicKey;
   mint: PublicKey;
 };

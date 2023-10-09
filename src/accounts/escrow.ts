@@ -9,50 +9,48 @@ import { AccountInfo, PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
 import { CardProgram } from '../cardProgram';
 
-export const MAX_ESCROW_DATA_LEN = 213;
+export const MAX_ESCROW_DATA_LEN = 155;
+
+export enum EscrowState {
+  Uninitialized = 0,
+  Initialized = 1,
+  Settled = 2,
+  Closed = 3,
+}
 
 export type EscrowDataArgs = {
-  isInitialized: boolean;
-  isSettled: boolean;
-  isCanceled: boolean;
+  state: EscrowState;
   amount: BN;
-  feeBps: number;
-  fixedFee: BN;
+  fee: BN;
   srcToken: StringPublicKey;
-  dstToken: StringPublicKey;
   vaultToken: StringPublicKey;
-  feeToken: StringPublicKey;
+  vaultBump: number;
   mint: StringPublicKey;
-  reference: StringPublicKey;
+  authority: StringPublicKey;
+  settled_at?: BN;
 };
 
 export class EscrowData extends Borsh.Data<EscrowDataArgs> {
   static readonly SCHEMA = EscrowData.struct([
-    ['isInitialized', 'u8'],
-    ['isSettled', 'u8'],
-    ['isCanceled', 'u8'],
+    ['state', 'u8'],
     ['amount', 'u64'],
-    ['feeBps', 'u16'],
-    ['fixedFee', 'u64'],
+    ['fee', 'u64'],
     ['srcToken', 'pubkeyAsString'],
-    ['dstToken', 'pubkeyAsString'],
     ['vaultToken', 'pubkeyAsString'],
-    ['feeToken', 'pubkeyAsString'],
+    ['vaultBump', 'u8'],
     ['mint', 'pubkeyAsString'],
-    ['reference', 'pubkeyAsString'],
+    ['authority', 'pubkeyAsString'],
+    ['settled_at', { kind: 'option', type: 'u64' }],
   ]);
-  isInitialized: boolean;
-  isSettled: boolean;
-  isCanceled: boolean;
+  state: EscrowState;
   amount: BN;
-  feeBps: number;
-  fixedFee: BN;
+  fee: BN;
   srcToken: StringPublicKey;
-  dstToken: StringPublicKey;
   vaultToken: StringPublicKey;
-  feeToken: StringPublicKey;
+  vaultBump: number;
   mint: StringPublicKey;
-  reference: StringPublicKey;
+  authority: StringPublicKey;
+  settled_at: BN | null;
 
   constructor(args: EscrowDataArgs) {
     super(args);

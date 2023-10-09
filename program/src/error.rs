@@ -25,8 +25,8 @@ pub enum CardError {
     AccountAlreadyCanceled,
     #[error("Fee overflow")]
     FeeOverflow,
-    #[error("Account not settled or canceled")]
-    AccountNotSettledOrCanceled,
+    #[error("Account not settled or initialized")]
+    AccountNotSettledOrInitialized,
     #[error("Account not initialized")]
     AccountNotInitialized,
     #[error("Math overflow")]
@@ -51,6 +51,10 @@ pub enum CardError {
     InvalidDepositTokenOwner,
     #[error("Invalid withdraw token owner")]
     InvalidWithdrawTokenOwner,
+    #[error("Account is closed")]
+    AccountAlreadyClosed,
+    #[error("Account is in an invalid state")]
+    AccountInvalidState,
 }
 
 impl From<CardError> for ProgramError {

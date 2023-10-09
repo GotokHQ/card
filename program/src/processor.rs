@@ -36,10 +36,6 @@ impl Processor {
                 msg!("Instruction: Settle Escrow");
                 escrow::process_settlement(accounts, program_id)
             }
-            CardInstruction::Cancel => {
-                msg!("Instruction: Cancel Escrow");
-                escrow::process_cancel(accounts, program_id)
-            }
             CardInstruction::Close => {
                 msg!("Instruction: Close");
                 escrow::process_close(accounts, program_id)

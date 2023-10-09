@@ -3,6 +3,7 @@ import {
   Transaction,
   TransactionInstruction,
   SYSVAR_RENT_PUBKEY,
+  SYSVAR_CLOCK_PUBKEY,
   SystemProgram,
   Connection,
   Keypair,
@@ -12,9 +13,8 @@ import * as spl from '@solana/spl-token';
 import BN from 'bn.js';
 import { InitializePaymentInput, EscrowInput } from './types';
 import { CardProgram } from '../cardProgram';
-import { Escrow } from '../accounts/escrow';
+import { Escrow, EscrowState } from '../accounts/escrow';
 import { InitEscrowArgs, InitEscrowParams } from '../transactions/InitEscrow';
-import { CancelEscrowArgs, CancelEscrowParams } from '../transactions/CancelEscrow';
 import { CloseEscrowArgs, CloseEscrowParams } from '../transactions/CloseEscrow';
 import { SettleEscrowArgs, SettleEscrowParams } from '../transactions/SettleEscrow';
 import { InitDepositArgs, InitDepositParams } from '../transactions/InitDeposit';
@@ -28,6 +28,7 @@ export const INVALID_AUTHORITY = 'Invalid authority';
 export const INVALID_PAYER_ADDRESS = 'Invalid payer address';
 export const ACCOUNT_ALREADY_CANCELED = 'Account already canceled';
 export const ACCOUNT_ALREADY_SETTLED = 'Account already settled';
+export const ACCOUNT_NOT_INITIALIZED_OR_SETTLED = 'Account not initialized or settled';
 export const INVALID_SIGNATURE = 'Invalid signature';
 export const AMOUNT_MISMATCH = 'Amount mismatch';
 export const FEE_MISMATCH = 'Fee mismatch';
@@ -58,115 +59,24 @@ export class EscrowClient {
     this.connection = connection;
   }
 
-  cancel = async (input: EscrowInput): Promise<string> => {
-    const escrow = await _getEscrowAccount(this.connection, new PublicKey(input.escrowAddress));
-
-    if (escrow.data?.isCanceled) {
-      throw new Error(ACCOUNT_ALREADY_CANCELED);
-    }
-    if (escrow.data?.isSettled) {
-      throw new Error(ACCOUNT_ALREADY_SETTLED);
-    }
-    const [vault] = await CardProgram.findProgramAuthority();
-    const exchangeInstruction = await this.cancelInstruction({
-      vaultOwner: vault,
-      vaultToken: new PublicKey(escrow.data.vaultToken),
-      sourceToken: new PublicKey(escrow.data.srcToken),
-      authority: this.authority.publicKey,
-      escrow: escrow.pubkey,
-      mint: new PublicKey(escrow.data.mint),
-    });
-    const transaction = new Transaction().add(exchangeInstruction);
-    if (input.memo) {
-      transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
-    }
-    transaction.recentBlockhash = (
-      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
-    ).blockhash;
-    transaction.feePayer = this.feePayer.publicKey;
-    transaction.sign(this.feePayer, this.authority);
-    try {
-      const signature = await this.connection.sendRawTransaction(transaction.serialize());
-      return signature;
-    } catch (error) {
-      throw new Error(TRANSACTION_SEND_ERROR);
-    }
-  };
-
-  cancelAndClose = async (input: EscrowInput): Promise<string> => {
-    const escrow = await _getEscrowAccount(this.connection, new PublicKey(input.escrowAddress));
-
-    if (escrow.data?.isCanceled) {
-      throw new Error(ACCOUNT_ALREADY_CANCELED);
-    }
-    if (escrow.data?.isSettled) {
-      throw new Error(ACCOUNT_ALREADY_SETTLED);
-    }
-    const [vault] = await CardProgram.findProgramAuthority();
-    const exchangeInstruction = await this.cancelInstruction({
-      vaultOwner: vault,
-      vaultToken: new PublicKey(escrow.data.vaultToken),
-      sourceToken: new PublicKey(escrow.data.srcToken),
-      authority: this.authority.publicKey,
-      escrow: escrow.pubkey,
-      mint: new PublicKey(escrow.data.mint),
-    });
-    const closeInstruction = this.closeInstruction({
-      escrow: escrow.pubkey,
-      authority: this.authority.publicKey,
-      feePayer: this.feePayer.publicKey,
-    });
-    const transaction = new Transaction().add(exchangeInstruction, closeInstruction);
-    if (input.memo) {
-      transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
-    }
-    transaction.recentBlockhash = (
-      await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
-    ).blockhash;
-    transaction.feePayer = this.feePayer.publicKey;
-    transaction.sign(this.feePayer, this.authority);
-    try {
-      const signature = await this.connection.sendRawTransaction(transaction.serialize());
-      return signature;
-    } catch (error) {
-      throw new Error(TRANSACTION_SEND_ERROR);
-    }
-  };
-
-  cancelInstruction = async (params: CancelEscrowParams): Promise<TransactionInstruction> => {
-    return new TransactionInstruction({
-      programId: CardProgram.PUBKEY,
-      data: CancelEscrowArgs.serialize(),
-      keys: [
-        { pubkey: params.authority, isSigner: true, isWritable: false },
-        { pubkey: params.escrow, isSigner: false, isWritable: true },
-        {
-          pubkey: params.sourceToken,
-          isSigner: false,
-          isWritable: true,
-        },
-        {
-          pubkey: params.vaultToken,
-          isSigner: false,
-          isWritable: true,
-        },
-        { pubkey: params.mint, isSigner: false, isWritable: false },
-        { pubkey: params.vaultOwner, isSigner: false, isWritable: false },
-        { pubkey: spl.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        {
-          pubkey: SystemProgram.programId,
-          isSigner: false,
-          isWritable: false,
-        },
-      ],
-    });
-  };
-
   close = async (input: EscrowInput): Promise<string> => {
+    const escrow = await _getEscrowAccount(this.connection, new PublicKey(input.escrowAddress));
+    if (
+      !(
+        escrow.data?.state === EscrowState.Initialized || escrow.data?.state === EscrowState.Settled
+      )
+    ) {
+      throw new Error(ACCOUNT_NOT_INITIALIZED_OR_SETTLED);
+    }
+    const [vault] = await CardProgram.findProgramAuthority();
     const exchangeInstruction = this.closeInstruction({
       escrow: new PublicKey(input.escrowAddress),
+      vaultToken: new PublicKey(escrow.data.vaultToken),
+      sourceToken: new PublicKey(escrow.data.srcToken),
       authority: this.authority.publicKey,
       feePayer: this.feePayer.publicKey,
+      mint: new PublicKey(escrow.data.mint),
+      vaultOwner: vault,
     });
     const transaction = new Transaction().add(exchangeInstruction);
     if (input.memo) {
@@ -193,7 +103,30 @@ export class EscrowClient {
           isSigner: false,
           isWritable: true,
         },
+        {
+          pubkey: params.sourceToken,
+          isSigner: false,
+          isWritable: true,
+        },
+        {
+          pubkey: params.vaultToken,
+          isSigner: false,
+          isWritable: true,
+        },
+        { pubkey: params.vaultOwner, isSigner: false, isWritable: false },
+        { pubkey: params.mint, isSigner: false, isWritable: false },
         { pubkey: params.feePayer, isSigner: false, isWritable: true },
+        {
+          pubkey: SYSVAR_RENT_PUBKEY,
+          isSigner: false,
+          isWritable: false,
+        },
+        { pubkey: spl.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        {
+          pubkey: SystemProgram.programId,
+          isSigner: false,
+          isWritable: false,
+        },
       ],
     });
   };
@@ -212,13 +145,11 @@ export class EscrowClient {
       true,
     );
     const amount = new BN(input.amount);
-    const feeBps = input.feeBps ?? 0;
-    const fixedFee = new BN(input.fixedFee ?? 0);
-    const [sourceToken, destinationToken, collectionFeeToken] = await Promise.all([
-      _findAssociatedTokenAddress(walletAddress, mint),
-      _findAssociatedTokenAddress(this.fundingWallet, mint),
-      _findAssociatedTokenAddress(this.feeWallet, mint),
-    ]);
+    const fee = new BN(input.fee ?? 0);
+    const sourceToken = await _findAssociatedTokenAddress(walletAddress, mint);
+
+    // _findAssociatedTokenAddress(this.fundingWallet, mint),
+    // _findAssociatedTokenAddress(this.feeWallet, mint),
     const escrowParams: InitEscrowParams = {
       mint,
       bump,
@@ -226,11 +157,8 @@ export class EscrowClient {
       vaultOwner,
       vaultToken: vaultTokenAccount.address,
       sourceToken,
-      destinationToken,
-      collectionFeeToken,
       amount: amount,
-      feeBps,
-      fixedFee,
+      fee,
       reference,
       wallet: walletAddress,
       authority: this.authority.publicKey,
@@ -256,8 +184,7 @@ export class EscrowClient {
   initInstruction = (params: InitEscrowParams): TransactionInstruction => {
     const {
       amount,
-      feeBps,
-      fixedFee,
+      fee,
       reference,
       bump,
       wallet,
@@ -266,14 +193,11 @@ export class EscrowClient {
       vaultOwner,
       vaultToken,
       sourceToken,
-      destinationToken,
-      collectionFeeToken,
       mint,
     } = params;
     const data = InitEscrowArgs.serialize({
       amount,
-      feeBps,
-      fixedFee,
+      fee,
       bump,
     });
     const keys = [
@@ -309,16 +233,6 @@ export class EscrowClient {
       },
       {
         pubkey: sourceToken,
-        isSigner: false,
-        isWritable: true,
-      },
-      {
-        pubkey: destinationToken,
-        isSigner: false,
-        isWritable: true,
-      },
-      {
-        pubkey: collectionFeeToken,
         isSigner: false,
         isWritable: true,
       },
@@ -361,7 +275,7 @@ export class EscrowClient {
     const reference = new PublicKey(input.reference);
     const [deposit, bump] = await CardProgram.findDepositAccount(reference);
     const amount = new BN(input.amount);
-    const feeBps = input.feeBps ?? 0;
+    const fee = new BN(input.fee ?? 0);
     // const fixedFee = new BN(input.fixedFee ?? 0);
     const [sourceToken, destinationToken, collectionFeeToken] = await Promise.all([
       _findAssociatedTokenAddress(walletAddress, mint),
@@ -377,9 +291,8 @@ export class EscrowClient {
       collectionToken: destinationToken,
       collectionFeeToken,
       amount: amount,
-      feeBps,
+      fee,
       key: reference,
-      authority: this.authority.publicKey,
       payer: this.feePayer.publicKey,
     };
 
@@ -402,11 +315,10 @@ export class EscrowClient {
   initDeposit = (params: InitDepositParams) => {
     const {
       amount,
-      feeBps,
+      fee,
       key,
       bump,
       user,
-      authority,
       deposit,
       sourceToken,
       collectionToken,
@@ -415,18 +327,13 @@ export class EscrowClient {
     } = params;
     const data = InitDepositArgs.serialize({
       amount,
-      feeBps,
+      fee,
       bump,
       key: key.toBase58(),
     });
     const keys = [
       {
         pubkey: user,
-        isSigner: true,
-        isWritable: false,
-      },
-      {
-        pubkey: authority,
         isSigner: true,
         isWritable: false,
       },
@@ -489,7 +396,7 @@ export class EscrowClient {
     const reference = new PublicKey(input.reference);
     const [withdraw, bump] = await CardProgram.findWithdrawAccount(reference);
     const amount = new BN(input.amount);
-    const feeBps = input.feeBps ?? 0;
+    const fee = new BN(input.fee ?? 0);
     // const fixedFee = new BN(input.fixedFee ?? 0);
     const [sourceToken, collectionFeeToken] = await Promise.all([
       _findAssociatedTokenAddress(this.withdrawalWallet.publicKey, mint),
@@ -511,9 +418,8 @@ export class EscrowClient {
       destinationToken: destinationToken.address,
       collectionFeeToken,
       amount: amount,
-      feeBps,
+      fee,
       key: reference,
-      authority: this.authority.publicKey,
       payer: this.feePayer.publicKey,
     };
 
@@ -536,11 +442,10 @@ export class EscrowClient {
   initWithdrawal = (params: InitWithdrawParams) => {
     const {
       amount,
-      feeBps,
+      fee,
       key,
       bump,
       wallet,
-      authority,
       withdraw,
       sourceToken,
       destinationToken,
@@ -549,18 +454,13 @@ export class EscrowClient {
     } = params;
     const data = InitWithdrawArgs.serialize({
       amount,
-      feeBps,
+      fee,
       bump,
       key: key.toBase58(),
     });
     const keys = [
       {
         pubkey: wallet,
-        isSigner: true,
-        isWritable: false,
-      },
-      {
-        pubkey: authority,
         isSigner: true,
         isWritable: false,
       },
@@ -638,8 +538,8 @@ export class EscrowClient {
       vaultOwner,
       vaultToken: new PublicKey(escrow.data.vaultToken),
       sourceToken: new PublicKey(escrow.data.srcToken),
-      destinationToken: new PublicKey(escrow.data.dstToken),
-      feeToken: new PublicKey(escrow.data.feeToken),
+      destinationToken: new PublicKey(input.dstTokenAddress),
+      feeToken: new PublicKey(input.feeTokenAddress),
       mint: new PublicKey(escrow.data.mint),
     });
     transaction.add(transactionInstruction);
@@ -667,14 +567,18 @@ export class EscrowClient {
       vaultOwner,
       vaultToken: new PublicKey(escrow.data.vaultToken),
       sourceToken: new PublicKey(escrow.data.srcToken),
-      destinationToken: new PublicKey(escrow.data.dstToken),
-      feeToken: new PublicKey(escrow.data.feeToken),
+      destinationToken: new PublicKey(input.dstTokenAddress),
+      feeToken: new PublicKey(input.feeTokenAddress),
       mint: new PublicKey(escrow.data.mint),
     });
     const closeInstruction = this.closeInstruction({
       escrow: escrowAddress,
       authority: this.authority.publicKey,
       feePayer: this.feePayer.publicKey,
+      vaultOwner,
+      vaultToken: new PublicKey(escrow.data.vaultToken),
+      sourceToken: new PublicKey(escrow.data.srcToken),
+      mint: new PublicKey(escrow.data.mint),
     });
     const transaction = new Transaction();
     transaction.add(settleInstruction);
@@ -713,6 +617,11 @@ export class EscrowClient {
         { pubkey: params.escrow, isSigner: false, isWritable: true },
         { pubkey: params.mint, isSigner: false, isWritable: false },
         { pubkey: params.vaultOwner, isSigner: false, isWritable: false },
+        {
+          pubkey: SYSVAR_CLOCK_PUBKEY,
+          isSigner: false,
+          isWritable: false,
+        },
         {
           pubkey: spl.TOKEN_PROGRAM_ID,
           isSigner: false,
