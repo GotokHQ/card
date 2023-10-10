@@ -184,6 +184,25 @@ pub fn spl_token_close<'a>(
     )
 }
 
+/// SPL transfer instruction.
+pub fn spl_token_init<'a>(
+    account: &AccountInfo<'a>,
+    mint: &AccountInfo<'a>,
+    owner: &AccountInfo<'a>,
+) -> Result<(), ProgramError> {
+    let ix = spl_token::instruction::initialize_account(
+        &spl_token::id(),
+        account.key,
+        mint.key,
+        owner.key,
+    )?;
+    
+    invoke(
+        &ix,
+        &[account.clone(), mint.clone(), owner.clone()],
+    )
+}
+
 pub fn calculate_fee(amount: u64, fee_basis_points: u64) -> Result<u64, ProgramError> {
     Ok(amount
         .checked_mul(fee_basis_points)

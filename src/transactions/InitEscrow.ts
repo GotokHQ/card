@@ -5,7 +5,9 @@ import BN from 'bn.js';
 type Args = {
   amount: BN;
   fee: BN;
-  bump: number;
+  escrow_bump: number;
+  vault_bump: number;
+  reference: string;
 };
 
 export class InitEscrowArgs extends Borsh.Data<Args> {
@@ -13,26 +15,28 @@ export class InitEscrowArgs extends Borsh.Data<Args> {
     ['instruction', 'u8'],
     ['amount', 'u64'],
     ['fee', 'u64'],
-    ['bump', 'u8'],
+    ['escrow_bump', 'u8'],
+    ['vault_bump', 'u8'],
+    ['reference', 'string'],
   ]);
 
   instruction = 2;
   amount: BN;
   fee: BN;
-  bump: number;
+  escrow_bump: number;
+  vault_bump: number;
+  reference: string;
 }
 
 export type InitEscrowParams = {
   amount: BN;
   fee: BN;
-  reference: PublicKey;
-  bump: number;
-  wallet: PublicKey;
+  reference: string;
+  escrow_bump: number;
+  vault_bump: number;
   authority: PublicKey;
   payer: PublicKey;
   escrow: PublicKey;
-  vaultOwner: PublicKey;
   vaultToken: PublicKey;
-  sourceToken: PublicKey;
   mint: PublicKey;
 };

@@ -5,11 +5,11 @@ import {
   Account,
   StringPublicKey,
 } from '@metaplex-foundation/mpl-core';
-import { AccountInfo, PublicKey } from '@solana/web3.js';
+import { AccountInfo } from '@solana/web3.js';
 import BN from 'bn.js';
 import { CardProgram } from '../cardProgram';
 
-export const MAX_ESCROW_DATA_LEN = 155;
+export const MAX_ESCROW_DATA_LEN = 123;
 
 export enum EscrowState {
   Uninitialized = 0,
@@ -22,7 +22,6 @@ export type EscrowDataArgs = {
   state: EscrowState;
   amount: BN;
   fee: BN;
-  srcToken: StringPublicKey;
   vaultToken: StringPublicKey;
   vaultBump: number;
   mint: StringPublicKey;
@@ -35,7 +34,6 @@ export class EscrowData extends Borsh.Data<EscrowDataArgs> {
     ['state', 'u8'],
     ['amount', 'u64'],
     ['fee', 'u64'],
-    ['srcToken', 'pubkeyAsString'],
     ['vaultToken', 'pubkeyAsString'],
     ['vaultBump', 'u8'],
     ['mint', 'pubkeyAsString'],
@@ -45,7 +43,6 @@ export class EscrowData extends Borsh.Data<EscrowDataArgs> {
   state: EscrowState;
   amount: BN;
   fee: BN;
-  srcToken: StringPublicKey;
   vaultToken: StringPublicKey;
   vaultBump: number;
   mint: StringPublicKey;
@@ -59,6 +56,7 @@ export class EscrowData extends Borsh.Data<EscrowDataArgs> {
 
 export class Escrow extends Account<EscrowData> {
   static readonly PREFIX = 'escrow';
+  static readonly VAULT_PREFIX = 'vault';
   constructor(pubkey: AnyPublicKey, info: AccountInfo<Buffer>) {
     super(pubkey, info);
     this.data = EscrowData.deserialize(this.info.data);
@@ -67,8 +65,8 @@ export class Escrow extends Account<EscrowData> {
     }
   }
 
-  static async getPDA(key: AnyPublicKey) {
-    const [pubKey] = await CardProgram.findEscrowAccount(new PublicKey(key));
+  static async getPDA(reference: string) {
+    const [pubKey] = await CardProgram.findEscrowAccount(reference);
     return pubKey;
   }
 }

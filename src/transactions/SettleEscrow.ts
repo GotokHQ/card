@@ -18,9 +18,7 @@ export class SettleEscrowArgs extends Borsh.Data<Args> {
 export type SettleEscrowParams = {
   authority: PublicKey;
   escrow: PublicKey;
-  vaultOwner: PublicKey;
   vaultToken: PublicKey;
-  sourceToken: PublicKey;
   destinationToken: PublicKey;
   feeToken: PublicKey;
   mint: PublicKey;

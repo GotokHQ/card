@@ -5,7 +5,6 @@ use crate::{
     instruction::WithdrawArgs,
     state::{FLAG_ACCOUNT_SIZE, withdraw::Withdraw},
     utils::*,
-    PREFIX,
 };
 
 use solana_program::{
@@ -65,10 +64,8 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -
         system_account_info,
         FLAG_ACCOUNT_SIZE,
         &[
-            PREFIX.as_bytes(),
-            program_id.as_ref(),
-            args.key.as_ref(),
             Withdraw::PREFIX.as_bytes(),
+            args.reference.as_bytes(),
             &[args.bump],
         ],
     )?;

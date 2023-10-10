@@ -15,8 +15,8 @@ use solana_program::{
 pub struct DepositArgs {
     pub amount: u64,
     pub fee: u64,
-    pub key: Pubkey,
     pub bump: u8,
+    pub reference: String,
 }
 
 /// Initialize a funding arguments
@@ -26,8 +26,8 @@ pub struct DepositArgs {
 pub struct WithdrawArgs {
     pub amount: u64,
     pub fee: u64,
-    pub key: Pubkey,
     pub bump: u8,
+    pub reference: String,
 }
 
 /// Initialize a escrow arguments
@@ -37,7 +37,9 @@ pub struct WithdrawArgs {
 pub struct InitEscrowArgs {
     pub amount: u64,
     pub fee: u64,
-    pub bump: u8,
+    pub escrow_bump: u8,
+    pub vault_bump: u8,
+    pub reference: String,
 }
 
 #[repr(C)]
@@ -123,7 +125,6 @@ pub fn deposit(
     collection_token: &Pubkey,
     collection_fee_token: &Pubkey,
     mint: &Pubkey,
-    reference: &Pubkey,
     args: DepositArgs,
 ) -> Instruction {
     let accounts = vec![
@@ -134,7 +135,6 @@ pub fn deposit(
         AccountMeta::new(*collection_token, false),
         AccountMeta::new(*collection_fee_token, false),
         AccountMeta::new_readonly(*mint, false),
-        AccountMeta::new_readonly(*reference, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
@@ -181,22 +181,16 @@ pub fn init_escrow(
     authority: &Pubkey,
     payer: &Pubkey,
     escrow: &Pubkey,
-    vault_owner: &Pubkey,
     vault_token: &Pubkey,
-    source_token: &Pubkey,
     mint: &Pubkey,
-    reference: &Pubkey,
     args: InitEscrowArgs,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*authority, true),
         AccountMeta::new(*payer, true),
         AccountMeta::new(*escrow, false),
-        AccountMeta::new_readonly(*vault_owner, false),
         AccountMeta::new(*vault_token, false),
-        AccountMeta::new(*source_token, false),
         AccountMeta::new_readonly(*mint, false),
-        AccountMeta::new_readonly(*reference, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
@@ -218,7 +212,6 @@ pub fn settle_escrow(
     vault_token: &Pubkey,
     escrow: &Pubkey,
     mint: &Pubkey,
-    vault_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*authority, true),
@@ -227,7 +220,6 @@ pub fn settle_escrow(
         AccountMeta::new(*vault_token, false),
         AccountMeta::new(*escrow, false),
         AccountMeta::new_readonly(*mint, false),
-        AccountMeta::new_readonly(*vault_owner, false),
         AccountMeta::new_readonly(sysvar::clock::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
@@ -246,7 +238,6 @@ pub fn close_escrow(
     authority: &Pubkey,
     escrow: &Pubkey,
     source_token: &Pubkey,
-    vault_owner: &Pubkey,
     vault_token: &Pubkey,
     mint: &Pubkey,
     fee_payer: &Pubkey,
@@ -256,7 +247,6 @@ pub fn close_escrow(
         AccountMeta::new(*escrow, false),
         AccountMeta::new(*source_token, false),
         AccountMeta::new(*vault_token, false),
-        AccountMeta::new(*vault_owner, false),
         AccountMeta::new_readonly(*mint, false),
         AccountMeta::new(*fee_payer, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),

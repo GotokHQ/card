@@ -19,6 +19,19 @@ pub fn find_program_authority(program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[PREFIX.as_bytes(), program_id.as_ref()], program_id)
 }
 
+/// Generates vault program address
+pub fn find_vault_program_address(program_id: &Pubkey, escrow: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            PREFIX.as_bytes(),
+            program_id.as_ref(),
+            escrow.as_ref(),
+            Escrow::VAULT_PREFIX.as_bytes(),
+        ],
+        program_id,
+    )
+}
+
 /// Generates deposit program address
 pub fn find_deposit_program_address(program_id: &Pubkey, reference: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(

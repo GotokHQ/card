@@ -6,7 +6,7 @@ use solana_program::{
     program_pack::{IsInitialized, Pack, Sealed}, pubkey::Pubkey,
 };
 
-pub const ESCROW_DATA_SIZE: usize = 155;
+pub const ESCROW_DATA_SIZE: usize = 123;
 
 #[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq, Clone, Default)]
@@ -23,7 +23,6 @@ pub struct Escrow {
     pub state: EscrowState,
     pub amount: u64,
     pub fee: u64,
-    pub src_token: Pubkey,
     pub vault_token: Pubkey,
     pub settled_at: Option<u64>,
     pub vault_bump: u8,
@@ -33,6 +32,7 @@ pub struct Escrow {
 
 impl Escrow {
     pub const PREFIX: &'static str = "escrow";
+    pub const VAULT_PREFIX: &'static str = "vault";
     pub fn is_closed(&self) -> bool {
         self.state == EscrowState::Closed
     }

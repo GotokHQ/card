@@ -29,10 +29,8 @@ export class Deposit extends Account<DepositData> {
 
   static async getPDA(key: AnyPublicKey) {
     return CardProgram.findProgramAddress([
-      Buffer.from(CardProgram.PREFIX),
-      CardProgram.PUBKEY.toBuffer(),
-      new PublicKey(key).toBuffer(),
       Buffer.from(Deposit.PREFIX),
+      new PublicKey(key).toBuffer(),
     ]);
   }
 }

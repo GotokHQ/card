@@ -9,9 +9,8 @@ export interface InitializePaymentInput {
   commitment?: Commitment;
 }
 export interface EscrowInput {
+  walletAddress: string;
   escrowAddress: string;
-  dstTokenAddress: string;
-  feeTokenAddress: string;
   memo?: string;
   commitment?: Commitment;
 }

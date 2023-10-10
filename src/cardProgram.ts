@@ -13,38 +13,30 @@ export class CardProgram extends Program {
     );
   }
 
-  static async findDepositAccount(key: PublicKey): Promise<[PublicKey, number]> {
+  static async findDepositAccount(reference: string): Promise<[PublicKey, number]> {
     return PublicKey.findProgramAddress(
-      [
-        Buffer.from(CardProgram.PREFIX, 'utf8'),
-        CardProgram.PUBKEY.toBuffer(),
-        key.toBuffer(),
-        Buffer.from(Deposit.PREFIX),
-      ],
+      [Buffer.from(Deposit.PREFIX), Buffer.from(reference)],
       CardProgram.PUBKEY,
     );
   }
 
-  static async findWithdrawAccount(key: PublicKey): Promise<[PublicKey, number]> {
+  static async findWithdrawAccount(reference: string): Promise<[PublicKey, number]> {
     return PublicKey.findProgramAddress(
-      [
-        Buffer.from(CardProgram.PREFIX, 'utf8'),
-        CardProgram.PUBKEY.toBuffer(),
-        key.toBuffer(),
-        Buffer.from(Withdraw.PREFIX),
-      ],
+      [Buffer.from(Withdraw.PREFIX), Buffer.from(reference)],
       CardProgram.PUBKEY,
     );
   }
 
-  static async findEscrowAccount(key: PublicKey): Promise<[PublicKey, number]> {
+  static async findEscrowAccount(reference: string): Promise<[PublicKey, number]> {
     return PublicKey.findProgramAddress(
-      [
-        Buffer.from(CardProgram.PREFIX),
-        CardProgram.PUBKEY.toBuffer(),
-        key.toBuffer(),
-        Buffer.from(Escrow.PREFIX),
-      ],
+      [Buffer.from(Escrow.PREFIX), Buffer.from(reference)],
+      CardProgram.PUBKEY,
+    );
+  }
+
+  static async findVaultAccount(escrow: PublicKey): Promise<[PublicKey, number]> {
+    return PublicKey.findProgramAddress(
+      [Buffer.from(Escrow.VAULT_PREFIX), escrow.toBuffer()],
       CardProgram.PUBKEY,
     );
   }

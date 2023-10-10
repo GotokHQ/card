@@ -5,8 +5,8 @@ import BN from 'bn.js';
 type Args = {
   amount: BN;
   fee: BN;
-  key: StringPublicKey;
   bump: number;
+  reference: string;
 };
 
 export class InitDepositArgs extends Borsh.Data<Args> {
@@ -14,21 +14,21 @@ export class InitDepositArgs extends Borsh.Data<Args> {
     ['instruction', 'u8'],
     ['amount', 'u64'],
     ['fee', 'u64'],
-    ['key', 'pubkeyAsString'],
     ['bump', 'u8'],
+    ['reference', 'string'],
   ]);
 
   instruction = 0;
   amount: BN;
   fee: BN;
-  key: StringPublicKey;
   bump: number;
+  reference: string;
 }
 
 export type InitDepositParams = {
   amount: BN;
   fee: BN;
-  key: PublicKey;
+  reference: string;
   bump: number;
   user: PublicKey;
   payer: PublicKey;

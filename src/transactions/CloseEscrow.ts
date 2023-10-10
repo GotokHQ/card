@@ -11,7 +11,6 @@ export type CloseEscrowParams = {
   authority: PublicKey;
   sourceToken: PublicKey;
   vaultToken: PublicKey;
-  vaultOwner: PublicKey;
   mint: PublicKey;
   escrow: PublicKey;
   feePayer: PublicKey;

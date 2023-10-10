@@ -29,10 +29,8 @@ export class Withdraw extends Account<WithdrawData> {
 
   static async getPDA(key: AnyPublicKey) {
     return CardProgram.findProgramAddress([
-      Buffer.from(CardProgram.PREFIX),
-      CardProgram.PUBKEY.toBuffer(),
-      new PublicKey(key).toBuffer(),
       Buffer.from(Withdraw.PREFIX),
+      new PublicKey(key).toBuffer(),
     ]);
   }
 }

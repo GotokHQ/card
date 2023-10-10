@@ -4,7 +4,7 @@ use crate::{
     error::CardError,
     instruction::DepositArgs,
     utils::*,
-    PREFIX, state::{FLAG_ACCOUNT_SIZE, deposit::Deposit},
+    state::{FLAG_ACCOUNT_SIZE, deposit::Deposit},
 };
 
 use solana_program::{
@@ -65,10 +65,8 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: DepositArgs) ->
         system_account_info,
         FLAG_ACCOUNT_SIZE,
         &[
-            PREFIX.as_bytes(),
-            program_id.as_ref(),
-            args.key.as_ref(),
             Deposit::PREFIX.as_bytes(),
+            args.reference.as_bytes(),
             &[args.bump],
         ],
     )?;
