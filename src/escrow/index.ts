@@ -277,6 +277,58 @@ export class EscrowClient {
       .toString('base64');
   };
 
+  initializeEscrowAndPay = async (input: InitializePaymentInput): Promise<string> => {
+    const payer = new PublicKey(input.wallet);
+    const mint = new PublicKey(input.mint);
+    const [escrow, escrowBump] = await CardProgram.findEscrowAccount(input.reference);
+    const [vaultTokenAccount, vaultBump] = await CardProgram.findVaultAccount(escrow);
+    const amount = new BN(input.amount);
+    const fee = new BN(input.fee ?? 0);
+    const total = amount.add(fee);
+    const escrowParams: InitEscrowParams = {
+      mint,
+      payer,
+      escrowBump,
+      vaultBump,
+      escrow,
+      vaultToken: vaultTokenAccount,
+      amount: amount,
+      fee,
+      reference: input.reference,
+      authority: this.authority.publicKey,
+      feePayer: this.feePayer.publicKey,
+    };
+
+    const transaction = new Transaction();
+    transaction.add(this.initInstruction(escrowParams));
+    if (mint.equals(spl.NATIVE_MINT)) {
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: payer,
+          toPubkey: vaultTokenAccount,
+          lamports: total.toNumber(),
+        }),
+      );
+    } else {
+      const source = await _findAssociatedTokenAddress(payer, mint);
+      transaction.add(
+        spl.createTransferInstruction(source, vaultTokenAccount, payer, BigInt(total.toString())),
+      );
+    }
+    if (input.memo) {
+      transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = this.feePayer.publicKey;
+    transaction.partialSign(this.feePayer, this.authority);
+    return transaction
+      .serialize({
+        requireAllSignatures: false,
+      })
+      .toString('base64');
+  };
+
   initInstruction = (params: InitEscrowParams): TransactionInstruction => {
     const {
       amount,
