@@ -1,14 +1,14 @@
 use crate::{
     error::CardError::{
         self, AccountAlreadyClosed, AccountAlreadySettled, AccountNotInitialized,
-        AccountNotSettledOrInitialized,
+        AccountNotSettledOrCanceled, AccountAlreadyCanceled, InsufficientSettlementFunds
     },
     instruction::InitEscrowArgs,
     state::escrow::{Escrow, EscrowState},
     utils::{
         assert_account_key, assert_initialized, assert_owned_by, assert_signer,
         create_new_account_raw, empty_account_balance,
-        spl_token_close, spl_token_init, spl_token_transfer,
+        spl_token_close, spl_token_init, spl_token_transfer, assert_token_owned_by, native_transfer,
     },
 };
 
@@ -33,7 +33,7 @@ pub fn process_init_escrow(
     let account_info_iter = &mut accounts.iter();
     let authority_info = next_account_info(account_info_iter)?;
     assert_signer(authority_info)?;
-
+    let payer_info = next_account_info(account_info_iter)?;
     let fee_payer_info = next_account_info(account_info_iter)?;
     let escrow_info = next_account_info(account_info_iter)?;
     let vault_token_info = next_account_info(account_info_iter)?;
@@ -79,7 +79,9 @@ pub fn process_init_escrow(
     escrow.amount = args.amount;
     escrow.mint = *mint_info.key;
     escrow.settled_at = None;
+    escrow.canceled_at = None;
     escrow.authority = *authority_info.key;
+    escrow.payer = *payer_info.key;
 
     Escrow::pack(escrow, &mut escrow_info.data.borrow_mut())?;
     Ok(())
@@ -118,6 +120,104 @@ fn create_escrow<'a>(
     proving_process
 }
 
+pub fn process_cancel(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramResult {
+    msg!("Process cancel");
+    let account_info_iter = &mut accounts.iter();
+    let authority_info = next_account_info(account_info_iter)?;
+
+    assert_signer(authority_info)?;
+
+    let escrow_info = next_account_info(account_info_iter)?;
+    assert_owned_by(escrow_info, program_id)?;
+    let mut escrow = Escrow::unpack(&escrow_info.data.borrow())?;
+
+    assert_account_key(
+        authority_info,
+        &escrow.authority,
+        Some(CardError::InvalidAuthorityId),
+    )?;
+
+    let payer_token_info = next_account_info(account_info_iter)?;
+    let vault_token_info = next_account_info(account_info_iter)?;
+
+    assert_account_key(
+        vault_token_info,
+        &escrow.vault_token,
+        Some(CardError::InvalidVaultTokenOwner),
+    )?;
+    let vault_token: TokenAccount = assert_initialized(vault_token_info)?;
+    let fee_payer_info = next_account_info(account_info_iter)?;
+    assert_signer(fee_payer_info)?;
+    let mint_info = next_account_info(account_info_iter)?;
+    assert_account_key(mint_info, &escrow.mint, Some(CardError::InvalidMint))?;
+    let clock_info = next_account_info(account_info_iter)?;
+    let clock = &Clock::from_account_info(clock_info)?;
+
+    if !escrow.is_initialized() {
+        if escrow.is_canceled() {
+            return Err(AccountAlreadyCanceled.into());
+        }
+        if escrow.is_settled() {
+            return Err(AccountAlreadySettled.into());
+        }
+        if escrow.is_closed() {
+            return Err(AccountAlreadyClosed.into());
+        }
+        return Err(AccountNotInitialized.into());
+    }
+    let vault_signer_seeds = [
+        Escrow::VAULT_PREFIX.as_bytes(),
+        escrow_info.key.as_ref(),
+        &[escrow.vault_bump],
+    ];
+
+    if vault_token.amount > 0 {
+        if vault_token.is_native() {
+            assert_account_key(
+                payer_token_info,
+                &escrow.payer,
+                Some(CardError::InvalidSrcTokenOwner),
+            )?;
+            spl_token_close(
+                vault_token_info,
+                fee_payer_info,
+                vault_token_info,
+                &[&vault_signer_seeds],
+            )?;
+            native_transfer(fee_payer_info, payer_token_info, vault_token.amount, &[])?;
+        } else {
+            let payer_token: TokenAccount = assert_initialized(payer_token_info)?;
+            assert_token_owned_by(&payer_token, &escrow.payer)?;
+            spl_token_transfer(
+                vault_token_info,
+                payer_token_info,
+                vault_token_info,
+                vault_token.amount,
+                &[&vault_signer_seeds],
+            )?;
+            spl_token_close(
+                vault_token_info,
+                fee_payer_info,
+                vault_token_info,
+                &[&vault_signer_seeds],
+            )?;
+        }
+    } else {
+        spl_token_close(
+            vault_token_info,
+            fee_payer_info,
+            vault_token_info,
+            &[&vault_signer_seeds],
+        )?;
+    }
+
+    msg!("Mark the escrow account as canceled...");
+    escrow.state = EscrowState::Canceled;
+    escrow.canceled_at = Some(clock.unix_timestamp as u64);
+    Escrow::pack(escrow, &mut escrow_info.data.borrow_mut())?;
+    Ok(())
+}
+
 //inside: impl Processor {}
 pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramResult {
     msg!("Process settlement");
@@ -152,6 +252,9 @@ pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> Prog
     )?;
 
     if !escrow.is_initialized() {
+        if escrow.is_canceled() {
+            return Err(AccountAlreadyCanceled.into());
+        }
         if escrow.is_settled() {
             return Err(AccountAlreadySettled.into());
         }
@@ -160,8 +263,8 @@ pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> Prog
         }
         return Err(AccountNotInitialized.into());
     }
-
-
+    let fee_payer_info = next_account_info(account_info_iter)?;
+    assert_signer(fee_payer_info)?;
     let mint_info = next_account_info(account_info_iter)?;
     assert_account_key(mint_info, &escrow.mint, Some(CardError::InvalidMint))?;
     let clock_info = next_account_info(account_info_iter)?;
@@ -175,23 +278,55 @@ pub fn process_settlement(accounts: &[AccountInfo], program_id: &Pubkey) -> Prog
         &[escrow.vault_bump],
     ];
 
-    let _: TokenAccount = assert_initialized(dst_token_info)?;
-    let _: TokenAccount = assert_initialized(fee_token_info)?;
+    let vault_token: TokenAccount = assert_initialized(vault_token_info)?;
+    let total = escrow.amount.checked_add(escrow.fee)
+    .ok_or::<ProgramError>(CardError::MathOverflow.into())?;
+    
+    if vault_token.amount < total {
+        return Err(InsufficientSettlementFunds.into());
+    }
 
-    spl_token_transfer(
-        vault_token_info,
-        dst_token_info,
-        vault_token_info,
-        escrow.amount,
-        &[&vault_signer_seeds],
-    )?;
-    spl_token_transfer(
-        vault_token_info,
-        fee_token_info,
-        vault_token_info,
-        escrow.fee,
-        &[&vault_signer_seeds],
-    )?;
+    if vault_token.is_native() {
+        spl_token_close(
+            vault_token_info,
+            fee_payer_info,
+            vault_token_info,
+            &[&vault_signer_seeds],
+        )?;
+        if escrow.amount > 0 {
+            native_transfer(fee_payer_info, dst_token_info, escrow.amount, &[])?;
+        }
+        if escrow.fee > 0 {
+            native_transfer(fee_payer_info, fee_token_info, escrow.fee, &[])?;
+        }
+    } else {
+        let _: TokenAccount = assert_initialized(dst_token_info)?;
+        let _: TokenAccount = assert_initialized(fee_token_info)?;
+        if escrow.amount > 0 {
+            spl_token_transfer(
+                vault_token_info,
+                dst_token_info,
+                vault_token_info,
+                escrow.amount,
+                &[&vault_signer_seeds],
+            )?;
+        }
+        if escrow.fee > 0 {
+            spl_token_transfer(
+                vault_token_info,
+                fee_token_info,
+                vault_token_info,
+                escrow.fee,
+                &[&vault_signer_seeds],
+            )?;
+        }
+        spl_token_close(
+            vault_token_info,
+            fee_payer_info,
+            vault_token_info,
+            &[&vault_signer_seeds],
+        )?;
+    }
     msg!("Mark the escrow account as settled...");
     escrow.state = EscrowState::Settled;
     escrow.settled_at = Some(clock.unix_timestamp as u64);
@@ -205,13 +340,10 @@ pub fn process_close(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramRe
     let authority_info = next_account_info(account_info_iter)?;
     assert_signer(authority_info)?;
     let escrow_info = next_account_info(account_info_iter)?;
-    let src_token_info = next_account_info(account_info_iter)?;
-    let vault_token_info = next_account_info(account_info_iter)?;
-    let mint_info = next_account_info(account_info_iter)?;
     let fee_payer_info = next_account_info(account_info_iter)?;
     assert_owned_by(escrow_info, program_id)?;
 
-    let mut escrow = Escrow::unpack(&escrow_info.data.borrow())?;
+    let escrow = Escrow::unpack(&escrow_info.data.borrow())?;
     assert_account_key(
         authority_info,
         &escrow.authority,
@@ -220,43 +352,10 @@ pub fn process_close(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramRe
     if escrow.is_closed() {
         return Err(AccountAlreadyClosed.into());
     }
-    if !(escrow.is_settled() || escrow.is_initialized()) {
-        return Err(AccountNotSettledOrInitialized.into());
+    if !(escrow.is_settled() || escrow.is_canceled()) {
+        return Err(AccountNotSettledOrCanceled.into());
     }
-    assert_account_key(mint_info, &escrow.mint, Some(CardError::InvalidMint))?;
-    assert_account_key(
-        vault_token_info,
-        &escrow.vault_token,
-        Some(CardError::InvalidSrcTokenOwner),
-    )?;
-    let vault_signer_seeds = [
-        Escrow::VAULT_PREFIX.as_bytes(),
-        escrow_info.key.as_ref(),
-        &[escrow.vault_bump],
-    ];
     msg!("Closing the escrow account...");
-    let vault_token: TokenAccount = assert_initialized(vault_token_info)?;
-    if vault_token.amount > 0 {
-        spl_token_transfer(
-            vault_token_info,
-            src_token_info,
-            vault_token_info,
-            vault_token.amount,
-            &[&vault_signer_seeds],
-        )?;
-    }
-    spl_token_close(
-        vault_token_info,
-        fee_payer_info,
-        vault_token_info,
-        &[&vault_signer_seeds],
-    )?;
-    msg!("Mark the escrow account as closed...");
-    if escrow.is_settled() {
-        escrow.state = EscrowState::Closed;
-        Escrow::pack(escrow, &mut escrow_info.data.borrow_mut())?;
-    } else {
-        empty_account_balance(escrow_info, fee_payer_info)?;
-    }
+    empty_account_balance(escrow_info, fee_payer_info)?;
     Ok(())
 }

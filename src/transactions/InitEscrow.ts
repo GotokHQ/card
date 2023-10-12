@@ -32,9 +32,10 @@ export type InitEscrowParams = {
   amount: BN;
   fee: BN;
   reference: string;
-  escrow_bump: number;
-  vault_bump: number;
+  escrowBump: number;
+  vaultBump: number;
   authority: PublicKey;
+  feePayer: PublicKey;
   payer: PublicKey;
   escrow: PublicKey;
   vaultToken: PublicKey;

@@ -9,9 +9,6 @@ export class CloseEscrowArgs extends Borsh.Data {
 
 export type CloseEscrowParams = {
   authority: PublicKey;
-  sourceToken: PublicKey;
-  vaultToken: PublicKey;
-  mint: PublicKey;
   escrow: PublicKey;
   feePayer: PublicKey;
 };

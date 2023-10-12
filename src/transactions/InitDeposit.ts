@@ -1,4 +1,4 @@
-import { Borsh, StringPublicKey } from '@metaplex-foundation/mpl-core';
+import { Borsh } from '@metaplex-foundation/mpl-core';
 import { PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
 

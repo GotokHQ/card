@@ -28,6 +28,8 @@ pub enum CardError {
     #[error("Account not settled or initialized")]
     AccountNotSettledOrInitialized,
     #[error("Account not initialized")]
+    AccountNotSettledOrCanceled,
+    #[error("Account not settled or canceled")]
     AccountNotInitialized,
     #[error("Math overflow")]
     MathOverflow,
@@ -43,7 +45,7 @@ pub enum CardError {
     InvalidVaultTokenOwner,
     #[error("Invalid source token owner")]
     InvalidSrcTokenOwner,
-    #[error("Invalid destination token owner")]
+    #[error("Invalid token owner")]
     InvalidDstTokenOwner,
     #[error("Invalid fee token owner")]
     InvalidFeeTokenOwner,
@@ -55,6 +57,8 @@ pub enum CardError {
     AccountAlreadyClosed,
     #[error("Account is in an invalid state")]
     AccountInvalidState,
+    #[error("Insufficient funds for settlement")]
+    InsufficientSettlementFunds,
 }
 
 impl From<CardError> for ProgramError {

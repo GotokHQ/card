@@ -22,4 +22,5 @@ export type SettleEscrowParams = {
   destinationToken: PublicKey;
   feeToken: PublicKey;
   mint: PublicKey;
+  feePayer: PublicKey;
 };

@@ -6,7 +6,7 @@ use solana_program::{
     program_pack::{IsInitialized, Pack, Sealed}, pubkey::Pubkey,
 };
 
-pub const ESCROW_DATA_SIZE: usize = 123;
+pub const ESCROW_DATA_SIZE: usize = 164;
 
 #[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, Debug, PartialEq, Clone, Default)]
@@ -15,6 +15,7 @@ pub enum EscrowState {
     Uninitialized = 0,
     Initialized,
     Settled,
+    Canceled,
     Closed,
 }
 #[repr(C)]
@@ -23,8 +24,10 @@ pub struct Escrow {
     pub state: EscrowState,
     pub amount: u64,
     pub fee: u64,
+    pub payer: Pubkey,
     pub vault_token: Pubkey,
     pub settled_at: Option<u64>,
+    pub canceled_at: Option<u64>,
     pub vault_bump: u8,
     pub mint: Pubkey,
     pub authority: Pubkey,
@@ -38,6 +41,9 @@ impl Escrow {
     }
     pub fn is_settled(&self) -> bool {
         self.state == EscrowState::Settled
+    }
+    pub fn is_canceled(&self) -> bool {
+        self.state == EscrowState::Canceled
     }
 }
 

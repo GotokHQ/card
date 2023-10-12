@@ -9,13 +9,14 @@ import { AccountInfo } from '@solana/web3.js';
 import BN from 'bn.js';
 import { CardProgram } from '../cardProgram';
 
-export const MAX_ESCROW_DATA_LEN = 123;
+export const MAX_ESCROW_DATA_LEN = 164;
 
 export enum EscrowState {
   Uninitialized = 0,
   Initialized = 1,
   Settled = 2,
-  Closed = 3,
+  Canceled = 3,
+  Closed = 4,
 }
 
 export type EscrowDataArgs = {
@@ -26,7 +27,9 @@ export type EscrowDataArgs = {
   vaultBump: number;
   mint: StringPublicKey;
   authority: StringPublicKey;
+  payer: StringPublicKey;
   settled_at?: BN;
+  canceled_at?: BN;
 };
 
 export class EscrowData extends Borsh.Data<EscrowDataArgs> {
@@ -34,20 +37,24 @@ export class EscrowData extends Borsh.Data<EscrowDataArgs> {
     ['state', 'u8'],
     ['amount', 'u64'],
     ['fee', 'u64'],
+    ['payer', 'pubkeyAsString'],
     ['vaultToken', 'pubkeyAsString'],
     ['vaultBump', 'u8'],
     ['mint', 'pubkeyAsString'],
     ['authority', 'pubkeyAsString'],
     ['settled_at', { kind: 'option', type: 'u64' }],
+    ['canceled_at', { kind: 'option', type: 'u64' }],
   ]);
   state: EscrowState;
   amount: BN;
   fee: BN;
+  payer: StringPublicKey;
   vaultToken: StringPublicKey;
   vaultBump: number;
   mint: StringPublicKey;
   authority: StringPublicKey;
   settled_at: BN | null;
+  canceled_at: BN | null;
 
   constructor(args: EscrowDataArgs) {
     super(args);

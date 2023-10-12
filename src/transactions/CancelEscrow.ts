@@ -10,8 +10,8 @@ export class CancelEscrowArgs extends Borsh.Data {
 export type CancelEscrowParams = {
   authority: PublicKey;
   escrow: PublicKey;
-  vaultOwner: PublicKey;
+  payerToken: PublicKey;
   vaultToken: PublicKey;
-  sourceToken: PublicKey;
+  feePayer: PublicKey;
   mint: PublicKey;
 };
