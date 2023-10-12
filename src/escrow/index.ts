@@ -774,7 +774,41 @@ export class EscrowClient {
     });
   };
 
-  getEscrow = async (address: PublicKey, commitment?: Commitment): Promise<Escrow> => {
+  hasPaid = async (escrowAddress: PublicKey, commitment?: Commitment): Promise<boolean> => {
+    try {
+      const [escrow, vault] = await Promise.all([
+        this.getEscrow(escrowAddress, commitment),
+        this.getVault(escrowAddress, commitment),
+      ]);
+      if (!escrow || !escrow.data || !vault) {
+        return false;
+      }
+      const amount = new BN(escrow.data.amount ?? 0);
+      const fee = new BN(escrow.data.fee ?? 0);
+      const total = amount.add(fee);
+      const vaultAmount = new BN(vault.amount.toString());
+      return vaultAmount.gte(total);
+    } catch (error: unknown) {
+      throw error;
+    }
+  };
+
+  getVault = async (escrow: PublicKey, commitment?: Commitment): Promise<spl.Account | null> => {
+    try {
+      const [vault] = await CardProgram.findVaultAccount(escrow);
+      return await spl.getAccount(this.connection, vault, commitment);
+    } catch (error: unknown) {
+      if (
+        error instanceof spl.TokenAccountNotFoundError ||
+        error instanceof spl.TokenInvalidAccountOwnerError
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  };
+
+  getEscrow = async (address: PublicKey, commitment?: Commitment): Promise<Escrow | null> => {
     try {
       return await _getEscrowAccount(this.connection, address, commitment);
     } catch (error) {
