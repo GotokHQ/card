@@ -38,6 +38,7 @@ export const ACCOUNT_ALREADY_SETTLED = 'Account already settled';
 export const ACCOUNT_NOT_INITIALIZED_OR_SETTLED = 'Account not initialized or settled';
 export const INVALID_SIGNATURE = 'Invalid signature';
 export const AMOUNT_MISMATCH = 'Amount mismatch';
+export const INVALID_STATE = 'Invalid state';
 export const FEE_MISMATCH = 'Fee mismatch';
 export const TRANSACTION_SEND_ERROR = 'Transaction send error';
 export const MEMO_PROGRAM_ID = new PublicKey('Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo');
@@ -315,6 +316,52 @@ export class EscrowClient {
       const source = await _findAssociatedTokenAddress(payer, mint);
       transaction.add(
         spl.createTransferInstruction(source, vaultTokenAccount, payer, BigInt(total.toString())),
+      );
+    }
+    if (input.memo) {
+      transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = this.feePayer.publicKey;
+    transaction.partialSign(this.feePayer, this.authority);
+    return transaction
+      .serialize({
+        requireAllSignatures: false,
+      })
+      .toString('base64');
+  };
+
+  pay = async (input: EscrowInput): Promise<string> => {
+    const escrowAddress = new PublicKey(input.escrowAddress);
+    const walletAddress = new PublicKey(input.memo);
+    const escrow = await _getEscrowAccount(this.connection, escrowAddress);
+    if (escrow.data.state !== EscrowState.Initialized) {
+      throw Error(INVALID_STATE);
+    }
+    const [vaultTokenAccount] = await CardProgram.findVaultAccount(escrowAddress);
+    const mint = new PublicKey(escrow.data.mint);
+    const amount = new BN(escrow.data.amount);
+    const fee = new BN(escrow.data.fee ?? 0);
+    const total = amount.add(fee);
+    const transaction = new Transaction();
+    if (mint.equals(spl.NATIVE_MINT)) {
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: walletAddress,
+          toPubkey: vaultTokenAccount,
+          lamports: total.toNumber(),
+        }),
+      );
+    } else {
+      const source = await _findAssociatedTokenAddress(walletAddress, mint);
+      transaction.add(
+        spl.createTransferInstruction(
+          source,
+          vaultTokenAccount,
+          walletAddress,
+          BigInt(total.toString()),
+        ),
       );
     }
     if (input.memo) {
