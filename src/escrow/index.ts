@@ -8,6 +8,8 @@ import {
   Connection,
   Keypair,
   Commitment,
+  RpcResponseAndContext,
+  SignatureResult,
 } from '@solana/web3.js';
 import * as spl from '@solana/spl-token';
 import BN from 'bn.js';
@@ -658,6 +660,20 @@ export class EscrowClient {
     return this.connection.sendRawTransaction(buffer, {
       skipPreflight: false,
     });
+  };
+
+  confirmTransaction = async (
+    signature: string,
+    commitment?: Commitment,
+  ): Promise<RpcResponseAndContext<SignatureResult>> => {
+    const latestBlockhash = await this.connection.getLatestBlockhash(commitment);
+    return await this.connection.confirmTransaction(
+      {
+        ...latestBlockhash,
+        signature,
+      },
+      commitment,
+    );
   };
 
   settle = async (input: EscrowInput): Promise<string> => {
