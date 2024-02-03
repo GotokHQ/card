@@ -9,6 +9,19 @@ export interface InitializePaymentInput {
   memo?: string;
   commitment?: Commitment;
 }
+
+export interface WithdrawalInput {
+  source: string;
+  destination: string;
+  mint: string;
+  reference: string;
+  amount: string;
+  feeBps?: number;
+  fixedFee?: string;
+  memo?: string;
+  commitment?: Commitment;
+}
+
 export interface EscrowInput {
   escrowAddress: string;
   memo?: string;

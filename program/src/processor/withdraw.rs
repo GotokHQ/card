@@ -3,8 +3,8 @@
 use crate::{
     collections::{authority, fee},
     error::CardError,
-    instruction::{WithdrawArgs},
-    state::{FLAG_ACCOUNT_SIZE, withdraw::{Withdraw}},
+    instruction::WithdrawArgs,
+    state::{FLAG_ACCOUNT_SIZE, withdraw::Withdraw},
     utils::*,
     PREFIX,
 };
@@ -63,10 +63,12 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -
     }
 
     let fee = calculate_fee(args.amount, args.fee_bps as u64)?;
-
-    transfer(false, source_token_info, destination_token_info, wallet_info, args.amount, &[])?;
-    transfer(false, source_token_info, collection_fee_token_info, wallet_info, fee, &[])?;
-
+    if args.amount > 0 {
+        transfer(false, source_token_info, destination_token_info, wallet_info, args.amount, &[])?;
+    }
+    if fee > 0 {
+        transfer(false, source_token_info, collection_fee_token_info, wallet_info, fee, &[])?;
+    }
 
     create_new_account_raw(
         program_id,

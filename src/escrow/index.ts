@@ -10,7 +10,7 @@ import {
 } from '@solana/web3.js';
 import * as spl from '@solana/spl-token';
 import BN from 'bn.js';
-import { InitializePaymentInput, EscrowInput } from './types';
+import { InitializePaymentInput, EscrowInput, WithdrawalInput } from './types';
 import { CardProgram } from '../cardProgram';
 import { Escrow } from '../accounts/escrow';
 import { InitEscrowArgs, InitEscrowParams } from '../transactions/InitEscrow';
@@ -37,7 +37,6 @@ export const MEMO_PROGRAM_ID = new PublicKey('Memo1UhkJRfHyvLMcVucJwxXeuD728EqVD
 export class EscrowClient {
   private feePayer: Keypair;
   private authority: Keypair;
-  private withdrawalWallet: Keypair;
   private feeWallet: PublicKey;
   private fundingWallet: PublicKey;
   private connection: Connection;
@@ -47,14 +46,12 @@ export class EscrowClient {
     authority: Keypair,
     feeWallet: PublicKey,
     fundingWallet: PublicKey,
-    withdrawalWallet: Keypair,
     connection: Connection,
   ) {
     this.feePayer = feePayer;
     this.authority = authority;
     this.feeWallet = feeWallet;
     this.fundingWallet = fundingWallet;
-    this.withdrawalWallet = withdrawalWallet;
     this.connection = connection;
   }
 
@@ -210,6 +207,7 @@ export class EscrowClient {
       mint,
       vaultOwner,
       true,
+      'confirmed',
     );
     const amount = new BN(input.amount);
     const feeBps = input.feeBps ?? 0;
@@ -483,8 +481,9 @@ export class EscrowClient {
     });
   };
 
-  initializeWithdrawal = async (input: InitializePaymentInput): Promise<string> => {
-    const walletAddress = new PublicKey(input.wallet);
+  initializeWithdrawal = async (input: WithdrawalInput): Promise<string> => {
+    const source = new PublicKey(input.source);
+    const destination = new PublicKey(input.destination);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
     const [withdraw, bump] = await CardProgram.findWithdrawAccount(reference);
@@ -492,19 +491,20 @@ export class EscrowClient {
     const feeBps = input.feeBps ?? 0;
     // const fixedFee = new BN(input.fixedFee ?? 0);
     const [sourceToken, collectionFeeToken] = await Promise.all([
-      _findAssociatedTokenAddress(this.withdrawalWallet.publicKey, mint),
+      _findAssociatedTokenAddress(source, mint),
       _findAssociatedTokenAddress(this.feeWallet, mint),
     ]);
     const destinationToken = await spl.getOrCreateAssociatedTokenAccount(
       this.connection,
       this.feePayer,
       mint,
-      walletAddress,
+      destination,
       true,
+      'confirmed',
     );
     const withdrawalParams: InitWithdrawParams = {
       mint,
-      wallet: this.withdrawalWallet.publicKey,
+      wallet: source,
       bump,
       withdraw,
       sourceToken,
@@ -525,7 +525,7 @@ export class EscrowClient {
     const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
-    transaction.partialSign(this.feePayer, this.authority, this.withdrawalWallet);
+    transaction.partialSign(this.feePayer, this.authority);
     return transaction
       .serialize({
         requireAllSignatures: false,
