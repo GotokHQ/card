@@ -542,6 +542,7 @@ export class EscrowClient {
     const {
       amount,
       feeBps,
+      fixedFee,
       key,
       bump,
       wallet,
@@ -557,6 +558,7 @@ export class EscrowClient {
       feeBps,
       bump,
       key: key.toBase58(),
+      fixedFee,
     });
     const keys = [
       {

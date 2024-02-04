@@ -7,6 +7,7 @@ type Args = {
   feeBps: number;
   key: StringPublicKey;
   bump: number;
+  fixedFee: BN;
 };
 
 export class InitWithdrawArgs extends Borsh.Data<Args> {
