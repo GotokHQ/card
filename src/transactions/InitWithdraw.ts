@@ -16,6 +16,7 @@ export class InitWithdrawArgs extends Borsh.Data<Args> {
     ['feeBps', 'u16'],
     ['key', 'pubkeyAsString'],
     ['bump', 'u8'],
+    ['fixedFee', 'u64'],
   ]);
 
   instruction = 1;
@@ -23,6 +24,7 @@ export class InitWithdrawArgs extends Borsh.Data<Args> {
   feeBps: number;
   key: StringPublicKey;
   bump: number;
+  fixedFee: BN;
 }
 
 export type InitWithdrawParams = {
@@ -38,4 +40,5 @@ export type InitWithdrawParams = {
   destinationToken: PublicKey;
   collectionFeeToken: PublicKey;
   mint: PublicKey;
+  fixedFee: BN;
 };

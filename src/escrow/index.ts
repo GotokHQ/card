@@ -489,18 +489,22 @@ export class EscrowClient {
     const [withdraw, bump] = await CardProgram.findWithdrawAccount(reference);
     const amount = new BN(input.amount);
     const feeBps = input.feeBps ?? 0;
-    // const fixedFee = new BN(input.fixedFee ?? 0);
+    const fixedFee = new BN(input.fixedFee ?? 0);
     const [sourceToken, collectionFeeToken] = await Promise.all([
       _findAssociatedTokenAddress(source, mint),
       _findAssociatedTokenAddress(this.feeWallet, mint),
     ]);
+    console.log('feePayer: ', this.feePayer.publicKey.toBase58());
+    console.log('mint: ', mint.toBase58());
+    console.log('destination: ', destination.toBase58());
+    console.log('commitment: ', input.commitment);
     const destinationToken = await spl.getOrCreateAssociatedTokenAccount(
       this.connection,
       this.feePayer,
       mint,
       destination,
       true,
-      'confirmed',
+      input.commitment,
     );
     const withdrawalParams: InitWithdrawParams = {
       mint,
@@ -508,10 +512,11 @@ export class EscrowClient {
       bump,
       withdraw,
       sourceToken,
-      destinationToken: destinationToken.address,
-      collectionFeeToken,
-      amount: amount,
       feeBps,
+      fixedFee,
+      collectionFeeToken,
+      destinationToken: destinationToken.address,
+      amount: amount,
       key: reference,
       authority: this.authority.publicKey,
       payer: this.feePayer.publicKey,

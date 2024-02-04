@@ -28,6 +28,7 @@ pub struct WithdrawArgs {
     pub fee_bps: u16,
     pub key: Pubkey,
     pub bump: u8,
+    pub fixed_fee: u64,
 }
 
 /// Initialize a escrow arguments
