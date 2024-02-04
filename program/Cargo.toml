@@ -10,9 +10,9 @@ no-entrypoint = []
 test-bpf = []
 
 [dependencies]
-solana-program = "~1.10.38"
-thiserror = "~1.0"
-borsh = "~0.9.3"
-spl-token = { version="~3.3.0", features = [ "no-entrypoint" ] }
+solana-program = "~1.17.1"
+thiserror = "~1.0.49"  
+borsh = "0.10"
+spl-token = { version="~4.0.0", features = [ "no-entrypoint" ] }
 [lib]
 crate-type = ["cdylib", "lib"]

@@ -1,7 +1,6 @@
 //! Init pass instruction processing
 
 use crate::{
-    collections::{authority, fee},
     error::CardError,
     instruction::WithdrawArgs,
     state::{withdraw::Withdraw, FLAG_ACCOUNT_SIZE},
@@ -36,11 +35,6 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -
     assert_signer(wallet_info)?;
     assert_signer(authority_info)?;
 
-    assert_account_key(
-        authority_info,
-        &authority::id(),
-        Some(CardError::InvalidAuthorityId),
-    )?;
     if withdraw_info.lamports() > 0 && !withdraw_info.data_is_empty() {
         return Err(ProgramError::AccountAlreadyInitialized);
     }
@@ -57,7 +51,6 @@ pub fn init(program_id: &Pubkey, accounts: &[AccountInfo], args: WithdrawArgs) -
     }
     assert_owned_by(collection_fee_token_info, &spl_token::id())?;
     let collection_fee_token: Account = assert_initialized(collection_fee_token_info)?;
-    assert_token_owned_by(&collection_fee_token, &fee::id())?;
     if collection_fee_token.mint != *mint_info.key {
         return Err(CardError::InvalidMint.into());
     }

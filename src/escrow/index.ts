@@ -494,18 +494,23 @@ export class EscrowClient {
       _findAssociatedTokenAddress(source, mint),
       _findAssociatedTokenAddress(this.feeWallet, mint),
     ]);
-    console.log('feePayer: ', this.feePayer.publicKey.toBase58());
-    console.log('mint: ', mint.toBase58());
-    console.log('destination: ', destination.toBase58());
-    console.log('commitment: ', input.commitment);
-    const destinationToken = await spl.getOrCreateAssociatedTokenAccount(
-      this.connection,
-      this.feePayer,
-      mint,
-      destination,
-      true,
-      input.commitment,
-    );
+    let destinationToken = await _findAssociatedTokenAddress(destination, mint);
+    try {
+      const token = await spl.getOrCreateAssociatedTokenAccount(
+        this.connection,
+        this.feePayer,
+        mint,
+        destination,
+        true,
+        input.commitment,
+        {
+          commitment: input.commitment,
+        },
+      );
+      destinationToken = token.address;
+    } catch (error) {
+      console.log('error', error);
+    }
     const withdrawalParams: InitWithdrawParams = {
       mint,
       wallet: source,
@@ -515,7 +520,7 @@ export class EscrowClient {
       feeBps,
       fixedFee,
       collectionFeeToken,
-      destinationToken: destinationToken.address,
+      destinationToken,
       amount: amount,
       key: reference,
       authority: this.authority.publicKey,
