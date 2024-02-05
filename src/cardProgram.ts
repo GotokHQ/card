@@ -48,4 +48,15 @@ export class CardProgram extends Program {
       CardProgram.PUBKEY,
     );
   }
+
+  static async findKey(key: string): Promise<[PublicKey, number]> {
+    return PublicKey.findProgramAddress(
+      [
+        Buffer.from(CardProgram.PREFIX, 'utf8'),
+        CardProgram.PUBKEY.toBuffer(),
+        Buffer.from(key, 'utf8'),
+      ],
+      CardProgram.PUBKEY,
+    );
+  }
 }
