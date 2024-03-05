@@ -34,6 +34,7 @@ export type InitWithdrawParams = {
   key: PublicKey;
   bump: number;
   wallet: PublicKey;
+  destination: PublicKey;
   authority: PublicKey;
   payer: PublicKey;
   withdraw: PublicKey;

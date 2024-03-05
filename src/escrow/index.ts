@@ -514,6 +514,7 @@ export class EscrowClient {
     const withdrawalParams: InitWithdrawParams = {
       mint,
       wallet: source,
+      destination,
       bump,
       withdraw,
       sourceToken,
@@ -551,6 +552,7 @@ export class EscrowClient {
       key,
       bump,
       wallet,
+      destination,
       authority,
       withdraw,
       sourceToken,
@@ -618,6 +620,11 @@ export class EscrowClient {
       },
       {
         pubkey: spl.TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: destination,
         isSigner: false,
         isWritable: false,
       },
