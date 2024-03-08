@@ -8,6 +8,8 @@ export interface InitializePaymentInput {
   fixedFee?: string;
   memo?: string;
   commitment?: Commitment;
+  computeUnitPrice?: number;
+  computeBudget?: number;
 }
 
 export interface WithdrawalInput {
@@ -20,12 +22,16 @@ export interface WithdrawalInput {
   fixedFee?: string;
   memo?: string;
   commitment?: Commitment;
+  computeUnitPrice?: number;
+  computeBudget?: number;
 }
 
 export interface EscrowInput {
   escrowAddress: string;
   memo?: string;
   commitment?: Commitment;
+  computeUnitPrice?: number;
+  computeBudget?: number;
 }
 
 export interface SettleAndTransferInput {
@@ -36,6 +42,8 @@ export interface SettleAndTransferInput {
   escrowAddress: string;
   memo?: string;
   fee?: string;
+  computeUnitPrice?: number;
+  computeBudget?: number;
 }
 
 export interface CancelPaymentOutput {

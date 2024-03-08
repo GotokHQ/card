@@ -7,6 +7,7 @@ import {
   Connection,
   Keypair,
   Commitment,
+  ComputeBudgetProgram,
 } from '@solana/web3.js';
 import * as spl from '@solana/spl-token';
 import BN from 'bn.js';
@@ -77,6 +78,20 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
+    if (input.computeBudget) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: input.computeBudget,
+        }),
+      );
+    }
+    if (input.computeUnitPrice) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: input.computeUnitPrice,
+        }),
+      );
+    }
     transaction.recentBlockhash = (
       await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
     ).blockhash;
@@ -116,6 +131,20 @@ export class EscrowClient {
     const transaction = new Transaction().add(exchangeInstruction, closeInstruction);
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    if (input.computeBudget) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: input.computeBudget,
+        }),
+      );
+    }
+    if (input.computeUnitPrice) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: input.computeUnitPrice,
+        }),
+      );
     }
     transaction.recentBlockhash = (
       await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
@@ -168,6 +197,20 @@ export class EscrowClient {
     const transaction = new Transaction().add(exchangeInstruction);
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    if (input.computeBudget) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: input.computeBudget,
+        }),
+      );
+    }
+    if (input.computeUnitPrice) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: input.computeUnitPrice,
+        }),
+      );
     }
     transaction.recentBlockhash = (
       await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
@@ -239,6 +282,20 @@ export class EscrowClient {
     transaction.add(this.initInstruction(escrowParams));
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    if (input.computeBudget) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: input.computeBudget,
+        }),
+      );
+    }
+    if (input.computeUnitPrice) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: input.computeUnitPrice,
+        }),
+      );
     }
     const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
     transaction.recentBlockhash = blockhash;
@@ -386,6 +443,20 @@ export class EscrowClient {
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
     }
+    if (input.computeBudget) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: input.computeBudget,
+        }),
+      );
+    }
+    if (input.computeUnitPrice) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: input.computeUnitPrice,
+        }),
+      );
+    }
     const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = this.feePayer.publicKey;
@@ -532,6 +603,20 @@ export class EscrowClient {
     transaction.add(this.initWithdrawal(withdrawalParams));
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    if (input.computeBudget) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: input.computeBudget,
+        }),
+      );
+    }
+    if (input.computeUnitPrice) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: input.computeUnitPrice,
+        }),
+      );
     }
     const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
     transaction.recentBlockhash = blockhash;
@@ -700,6 +785,20 @@ export class EscrowClient {
     transaction.add(closeInstruction);
     if (input.memo) {
       transaction.add(this.memoInstruction(input.memo, this.authority.publicKey));
+    }
+    if (input.computeBudget) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: input.computeBudget,
+        }),
+      );
+    }
+    if (input.computeUnitPrice) {
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: input.computeUnitPrice,
+        }),
+      );
     }
     transaction.recentBlockhash = (
       await this.connection.getLatestBlockhash(input.commitment ?? 'finalized')
