@@ -34,6 +34,10 @@ export interface EscrowInput {
   computeBudget?: number;
 }
 
+export interface ResultContext {
+  transaction: string;
+  slot: number;
+}
 export interface SettleAndTransferInput {
   walletAddress: string;
   transferTokenMintAddress: string;

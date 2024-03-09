@@ -11,7 +11,7 @@ import {
 } from '@solana/web3.js';
 import * as spl from '@solana/spl-token';
 import BN from 'bn.js';
-import { InitializePaymentInput, EscrowInput, WithdrawalInput } from './types';
+import { InitializePaymentInput, EscrowInput, WithdrawalInput, ResultContext } from './types';
 import { CardProgram } from '../cardProgram';
 import { Escrow } from '../accounts/escrow';
 import { InitEscrowArgs, InitEscrowParams } from '../transactions/InitEscrow';
@@ -238,7 +238,7 @@ export class EscrowClient {
     });
   };
 
-  initializeEscrow = async (input: InitializePaymentInput): Promise<string> => {
+  initializeEscrow = async (input: InitializePaymentInput): Promise<ResultContext> => {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
@@ -297,15 +297,20 @@ export class EscrowClient {
         }),
       );
     }
-    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
-    transaction.recentBlockhash = blockhash;
+    const { context, value } = await this.connection.getLatestBlockhashAndContext(
+      input.commitment ?? 'finalized',
+    );
+    transaction.recentBlockhash = value.blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
-    return transaction
-      .serialize({
-        requireAllSignatures: false,
-      })
-      .toString('base64');
+    return {
+      transaction: transaction
+        .serialize({
+          requireAllSignatures: false,
+        })
+        .toString('base64'),
+      slot: context.slot,
+    };
   };
 
   initInstruction = (params: InitEscrowParams): TransactionInstruction => {
@@ -410,7 +415,7 @@ export class EscrowClient {
     });
   };
 
-  initializeDeposit = async (input: InitializePaymentInput): Promise<string> => {
+  initializeDeposit = async (input: InitializePaymentInput): Promise<ResultContext> => {
     const walletAddress = new PublicKey(input.wallet);
     const mint = new PublicKey(input.mint);
     const reference = new PublicKey(input.reference);
@@ -457,15 +462,20 @@ export class EscrowClient {
         }),
       );
     }
-    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
-    transaction.recentBlockhash = blockhash;
+    const { context, value } = await this.connection.getLatestBlockhashAndContext(
+      input.commitment ?? 'finalized',
+    );
+    transaction.recentBlockhash = value.blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
-    return transaction
-      .serialize({
-        requireAllSignatures: false,
-      })
-      .toString('base64');
+    return {
+      transaction: transaction
+        .serialize({
+          requireAllSignatures: false,
+        })
+        .toString('base64'),
+      slot: context.slot,
+    };
   };
 
   initDeposit = (params: InitDepositParams) => {
@@ -552,7 +562,7 @@ export class EscrowClient {
     });
   };
 
-  initializeWithdrawal = async (input: WithdrawalInput): Promise<string> => {
+  initializeWithdrawal = async (input: WithdrawalInput): Promise<ResultContext> => {
     const source = new PublicKey(input.source);
     const destination = new PublicKey(input.destination);
     const mint = new PublicKey(input.mint);
@@ -618,15 +628,20 @@ export class EscrowClient {
         }),
       );
     }
-    const { blockhash } = await this.connection.getLatestBlockhash(input.commitment ?? 'finalized');
-    transaction.recentBlockhash = blockhash;
+    const { context, value } = await this.connection.getLatestBlockhashAndContext(
+      input.commitment ?? 'finalized',
+    );
+    transaction.recentBlockhash = value.blockhash;
     transaction.feePayer = this.feePayer.publicKey;
     transaction.partialSign(this.feePayer, this.authority);
-    return transaction
-      .serialize({
-        requireAllSignatures: false,
-      })
-      .toString('base64');
+    return {
+      transaction: transaction
+        .serialize({
+          requireAllSignatures: false,
+        })
+        .toString('base64'),
+      slot: context.slot,
+    };
   };
 
   initWithdrawal = (params: InitWithdrawParams) => {
